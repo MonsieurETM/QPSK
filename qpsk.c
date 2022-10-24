@@ -22,7 +22,6 @@
 
 static float cnormf(complex float);
 static int find_quadrant(complex float);
-static void fir(complex float [], complex float [], int);
 
 // Globals
 
