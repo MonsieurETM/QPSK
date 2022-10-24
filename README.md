@@ -1,7 +1,7 @@
 #### QPSK - An Experimental QPSK Modem
 This project is to design a 9600 bit/s QPSK 2400 Baud modem that does not require a preamble, or a Unique Word (UW) in order to synchronize the timing. There may be a sync word as part of a protocol, but not for timing.
 
-In theory, we don't know where the QPSK time-domain waveform begins. So we average the amplitudes over a cycle. Then we generate seven (7) histograms based on the sample point. The histogram with the highest count is the winner. At this point we declare the proper index to add during demodulation after decimation to the modem signal rate (2400 Baud).
+In theory, we don't know where the QPSK time-domain symbols begin. So we average the amplitudes over a cycle. Then we generate seven (7) histograms based on the sample point. The histogram with the highest count is the winner. At this point we declare the proper index to add during demodulation after decimation to the modem signal rate (2400 Baud).
 
 There also needs to be a frequency error adjustment.
 
