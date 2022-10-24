@@ -6,3 +6,5 @@ In theory, we don't know where the QPSK time-domain waveform begins. So we avera
 There also needs to be a frequency error adjustment.
 
 The testing program uses Octave to generate the scatter plot. This is not really needed, but used to check progress.
+
+<img src="scatter.png" width="400">  
