@@ -14,10 +14,9 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
-#include <fftw3.h>
 
 #include "qpsk.h"
-#include "filter_coef.h"
+#include "rrc_fir.h"
 
 // Prototypes
 
@@ -68,27 +67,6 @@ void set_qpsk_rx_offset(float fshift) {
         fbb_rx_rect *= cmplxconj(val);
     } else {
         fbb_rx_rect *= cmplx(val);
-    }
-}
-
-/*
- * FIR RRC Filter with specified impulse length used at 9600 Hz
- */
-static void fir(complex float memory[], complex float sample[], int length) {
-    for (int j = 0; j < length; j++) {
-        for (int i = 0; i < (NTAPS - 1); i++) {
-            memory[i] = memory[i + 1];
-        }
-
-        memory[(NTAPS - 1)] = sample[j];
-
-        complex float y = 0.0f;
-
-        for (int i = 0; i < NTAPS; i++) {
-            y += (memory[i] * alpha31_root[i]);
-        }
-
-        sample[j] = y;
     }
 }
 
@@ -156,7 +134,7 @@ void rx_frame(int16_t in[], int bits[]) {
      * Raised Root Cosine Filter
      */
      
-    fir(rx_filter, input_frame, FRAME_SIZE);
+    rrc_fir(rx_filter, input_frame, FRAME_SIZE);
 
     /*
      * Find maximum absolute I/Q value for one symbol length
@@ -300,7 +278,7 @@ int tx_frame(int16_t samples[], complex float symbol[], int length) {
     /*
      * Raised Root Cosine Filter
      */
-    fir(tx_filter, signal, (length * CYCLES));
+    rrc_fir(tx_filter, signal, (length * CYCLES));
 
     /*
      * Shift Baseband to Center Frequency
@@ -346,6 +324,12 @@ int main(int argc, char** argv) {
 
     srand(time(0));
     
+    /*
+     * Create an RRC filter using the
+     * Sample Rate, baud, and Alpha
+     */
+    rrc_make(FS, RS, .35f);
+
     /*
      * create the QPSK data waveform.
      * This simulates the transmitted packets.
