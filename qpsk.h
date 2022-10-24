@@ -13,8 +13,6 @@ extern "C"
 
 #define TX_FILENAME "/tmp/spectrum-filtered.raw"
 
-#define NTAPS           39
-
 #define FS              9600.0
 #define RS              2400.0
 #define NS              8
