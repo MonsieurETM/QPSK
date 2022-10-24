@@ -1,7 +1,7 @@
 # Makefile for QPSK modem
 
-SRC=qpsk.c
-HEADER=filter_coef.h qpsk.h
+SRC=qpsk.c rrc_fir.c
+HEADER=qpsk.h rrc_fir.h
 
 qpsk: ${SRC} ${HEADER}
 	gcc -std=c11 ${SRC} -DTEST_SCATTER -o qpsk -Wall -lm
