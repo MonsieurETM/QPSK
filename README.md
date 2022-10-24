@@ -1,1 +1,1 @@
-#### QPSK An Experimental QPSK Modem
+#### QPSK - An Experimental QPSK Modem
