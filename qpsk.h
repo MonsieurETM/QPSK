@@ -15,9 +15,6 @@ extern "C"
 
 #define NTAPS           39
 
-/* manual/hard coded fine timing estimation for now */
-#define FINE_TIMING_OFFSET 3
-
 #define FS              9600.0
 #define RS              2400.0
 #define NS              8
@@ -51,14 +48,6 @@ typedef struct
     float cost;
     complex float rx_symb;
 } Rxed;
-
-/* modem state machine states */
-
-typedef enum
-{
-    hunt,
-    process
-} State;
 
 /* Prototypes */
 
