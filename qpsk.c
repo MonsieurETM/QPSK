@@ -224,7 +224,7 @@ void rx_frame(int16_t in[], int bits[]) {
         }
     }
     
-    printf("%d %d %d %d %d %d %d  Max = %d\n", hist[1], hist[2], hist[3], hist[4], hist[5], hist[6], hist[7], index);
+    //printf("%d %d %d %d %d %d %d  Max = %d\n", hist[1], hist[2], hist[3], hist[4], hist[5], hist[6], hist[7], index);
     
     /*
      * Decimate by 4 to the 2400 symbol rate
