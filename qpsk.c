@@ -111,6 +111,8 @@ void rx_frame(int16_t in[], int bits[]) {
     float av_i = 0.0f;;
     float av_q = 0.0f;
     
+    float phi_error_hat;
+    
     int hist_i[8] = { 0 };
     int hist_q[8] = { 0 };
 
@@ -201,8 +203,6 @@ void rx_frame(int16_t in[], int bits[]) {
         }
     }
     
-    //printf("%d %d %d %d %d %d %d  Max = %d\n", hist[1], hist[2], hist[3], hist[4], hist[5], hist[6], hist[7], index);
-    
     /*
      * Decimate by 4 to the 2400 symbol rate
      */
@@ -213,9 +213,10 @@ void rx_frame(int16_t in[], int bits[]) {
         decimated_frame[extended] = input_frame[(i * CYCLES) + index];
 
         /*
-         * TODO Compute QPSK phase error after removing modulation
+         * Compute QPSK (4th-Order) phase error (remove modulation)
          */
-        //float phase_error = cargf(cpowf(decimated_frame[extended], 4.0f) / 4.0f);
+
+        //phi_error_hat = cargf(cpowf(decimated_frame[extended], 4.0f));
 
 #ifdef TEST_SCATTER
         fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
