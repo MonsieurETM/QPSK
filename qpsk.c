@@ -112,7 +112,8 @@ void rx_frame(int16_t in[], int bits[]) {
     float av_q = 0.0f;
     
     float phi_error_hat;
-    
+
+    int rxbits[2];
     int hist_i[8] = { 0 };
     int hist_q[8] = { 0 };
 
@@ -202,7 +203,7 @@ void rx_frame(int16_t in[], int bits[]) {
             index = i;
         }
     }
-    
+
     /*
      * Decimate by 4 to the 2400 symbol rate
      */
@@ -213,27 +214,26 @@ void rx_frame(int16_t in[], int bits[]) {
         decimated_frame[extended] = input_frame[(i * CYCLES) + index];
 
         /*
-         * Compute QPSK (4th-Order) phase error (remove modulation)
+         * Compute 4th-Order phase error (remove modulation)
          */
 
         //phi_error_hat = cargf(cpowf(decimated_frame[extended], 4.0f));
 
 #ifdef TEST_SCATTER
-        fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
-#endif 
+        //fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
+#endif
+    }
+    
+    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
+        //printf("%d ", find_quadrant(decimated_frame[i]));
+
+        qpsk_demod(decimated_frame[i], rxbits);
+        printf("%d%d ", rxbits[0], rxbits[1]);
     }
 }
 
 /*
  * Gray coded QPSK modulation function
- * 
- *      Q
- *      |
- * -I---+---I
- *      |
- *     -Q
- * 
- * The symbols are not rotated on transmit
  */
 complex float qpsk_mod(int bits[]) {
     return constellation[(bits[1] << 1) | bits[0]];
@@ -339,7 +339,7 @@ int main(int argc, char** argv) {
     fbb_tx_phase = cmplx(0.0f);
     fbb_tx_rect = cmplx(TAU * CENTER / FS);
 
-    for (int k = 0; k < 100; k++) {
+    for (int k = 0; k < 4; k++) {
         /*
          * NS data frames
          */
@@ -348,6 +348,8 @@ int main(int argc, char** argv) {
             for (int i = 0; i < (DATA_SYMBOLS * 2); i += 2) {
                 bits[i] = rand() % 2;
                 bits[i + 1] = rand() % 2;
+                
+                printf("%d%d ", bits[i], bits[i + 1]);
             }
 
             length = qpsk_data_modulate(frame, bits, DATA_SYMBOLS);
@@ -357,6 +359,8 @@ int main(int argc, char** argv) {
     }
 
     fclose(fout);
+
+    printf("\n\n\n");
 
     /*
      * Now try to process what was transmitted
