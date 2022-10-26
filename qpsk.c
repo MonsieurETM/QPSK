@@ -69,6 +69,10 @@ void set_qpsk_rx_offset(float fshift) {
     }
 }
 
+/*
+ * This algorithm would be used with a
+ * Viterbi decoder.
+ */
 static int find_quadrant(complex float symbol) {
     float quadrant;
 
@@ -103,7 +107,6 @@ static int find_quadrant(complex float symbol) {
  * 2400 baud QPSK at 9600 samples/sec.
  * Remove any frequency and timing offsets
  */
-
 void rx_frame(int16_t in[], int bits[]) {
     float max_i = 0.0f;
     float max_q = 0.0f;
@@ -114,6 +117,11 @@ void rx_frame(int16_t in[], int bits[]) {
     float phi_error_hat;
 
     int rxbits[2];
+    
+    /*
+     * You need as many histograms as you think
+     * you'll need for timing offset. Using 8 for now.
+     */
     int hist_i[8] = { 0 };
     int hist_q[8] = { 0 };
 
@@ -135,13 +143,12 @@ void rx_frame(int16_t in[], int bits[]) {
     /*
      * Raised Root Cosine Filter
      */
-     
     rrc_fir(rx_filter, input_frame, FRAME_SIZE);
 
     /*
      * Find maximum absolute I/Q value for one symbol length
+     * after passing through the filter
      */
-     
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         for (int j = 0; j < CYCLES; j++) {
             av_i += fabsf(crealf(input_frame[i+j]));
@@ -162,7 +169,6 @@ void rx_frame(int16_t in[], int bits[]) {
         /*
          * Create 8 I/Q amplitude histograms
          */
-
         float hv_i = (max_i / 8.0f);
         float hv_q = (max_q / 8.0f);
     
@@ -182,25 +188,20 @@ void rx_frame(int16_t in[], int bits[]) {
     }
 
     /*
-     * Sum the two histograms
+     * Sum the I/Q histograms
+     * and ind the maximum value
      */
+    int hmax = 0;
+    int index = 0;
+
     int hist[8] = { 0 };
     
     for (int j = 0; j < 8; j++) {            
         hist[j] = (hist_i[j] + hist_q[j]);
-    }
 
-    /*
-     * Find the maximum value in the combined histograms
-     */
-    int index = 0;
-    int hmax = 0;
-
-    // Find max hist value
-    for (int i = 1; i < 8; i++) {
-        if (hist[i] > hmax) {
-            hmax = hist[i];
-            index = i;
+        if (hist[j] > hmax) {
+            hmax = hist[j];
+            index = j;
         }
     }
 
@@ -220,16 +221,17 @@ void rx_frame(int16_t in[], int bits[]) {
         //phi_error_hat = cargf(cpowf(decimated_frame[extended], 4.0f));
 
 #ifdef TEST_SCATTER
-        //fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
+        fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
 #endif
     }
-    
+/*
     for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
         //printf("%d ", find_quadrant(decimated_frame[i]));
 
         qpsk_demod(decimated_frame[i], rxbits);
         printf("%d%d ", rxbits[0], rxbits[1]);
     }
+*/
 }
 
 /*
@@ -339,7 +341,7 @@ int main(int argc, char** argv) {
     fbb_tx_phase = cmplx(0.0f);
     fbb_tx_rect = cmplx(TAU * CENTER / FS);
 
-    for (int k = 0; k < 4; k++) {
+    for (int k = 0; k < 100; k++) {
         /*
          * NS data frames
          */
@@ -349,7 +351,7 @@ int main(int argc, char** argv) {
                 bits[i] = rand() % 2;
                 bits[i + 1] = rand() % 2;
                 
-                printf("%d%d ", bits[i], bits[i + 1]);
+                //printf("%d%d ", bits[i], bits[i + 1]);
             }
 
             length = qpsk_data_modulate(frame, bits, DATA_SYMBOLS);
