@@ -32,6 +32,9 @@ extern "C"
 #define TAU             (2.0 * M_PI)
 #define ROTATE45        (M_PI / 4.0)
 
+#define ALPHA		0.015f
+#define BETA		(ALPHA * ALPHA)
+
 /*
  * This method is much faster than using cexp()
  * float_value - must be a float

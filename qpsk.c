@@ -30,8 +30,16 @@ static FILE *fout;
 
 static complex float tx_filter[NTAPS];
 static complex float rx_filter[NTAPS];
-static complex float input_frame[(FRAME_SIZE * 2)];
-static complex float decimated_frame[256];
+static complex float input_frame[FRAME_SIZE];
+static complex float decimated_frame[128];	// FRAME_SIZE / CYCLES
+
+/*
+ * Costas Loop values
+ */
+static complex float costas_frame[FRAME_SIZE];
+
+static float omega_hat[FRAME_SIZE];
+static float phi_hat[FRAME_SIZE];
 
 // Two phase for full duplex
 
@@ -113,10 +121,8 @@ void rx_frame(int16_t in[], int bits[]) {
 
     float av_i = 0.0f;;
     float av_q = 0.0f;
-    
-    float phi_error_hat;
 
-    int rxbits[2];
+    //int rxbits[2];
     
     /*
      * You need as many histograms as you think
@@ -131,11 +137,8 @@ void rx_frame(int16_t in[], int bits[]) {
      */
     for (int i = 0; i < FRAME_SIZE; i++) {
         fbb_rx_phase *= fbb_rx_rect;
-        
-        complex float val = fbb_rx_phase * ((float) in[i] / 16384.0f);
 
-        input_frame[i] = input_frame[FRAME_SIZE + i];	// Current frame
-        input_frame[FRAME_SIZE + i] = val;		// Future frame
+        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);
     }
 
     fbb_rx_phase /= cabsf(fbb_rx_phase); // normalize as magnitude can drift
@@ -206,32 +209,38 @@ void rx_frame(int16_t in[], int bits[]) {
     }
 
     /*
-     * Decimate by 4 to the 2400 symbol rate
+     * Costas Loop over the whole input frame
      */
-    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
-        int extended = (FRAME_SIZE / CYCLES) + i; // compute once
-        
-        decimated_frame[i] = decimated_frame[extended];
-        decimated_frame[extended] = input_frame[(i * CYCLES) + index];
+    for (int i = 0; i < (FRAME_SIZE - 1); i++) {
+        costas_frame[i] = input_frame[i] * cmplxconj(phi_hat[i]);  // carrier sync
 
         /*
          * Compute 4th-Order phase error (remove modulation)
          */
+        float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
+        
+        omega_hat[i+1] = omega_hat[i] + (BETA * phi_error_hat); // loop filter
+        phi_hat[i+1] = phi_hat[i] + (ALPHA * phi_error_hat) + omega_hat[i+1];
+    }
 
-        //phi_error_hat = cargf(cpowf(decimated_frame[extended], 4.0f));
+    /*
+     * Decimate by 4 to the 2400 symbol rate
+     * adjust for the timing error
+     */
+    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
+        decimated_frame[i] = costas_frame[(i * CYCLES) + index];
 
 #ifdef TEST_SCATTER
         fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
 #endif
-    }
+
 /*
-    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
         //printf("%d ", find_quadrant(decimated_frame[i]));
 
         qpsk_demod(decimated_frame[i], rxbits);
         printf("%d%d ", rxbits[0], rxbits[1]);
-    }
 */
+    }
 }
 
 /*
@@ -325,7 +334,16 @@ int main(int argc, char** argv) {
     int length;
 
     srand(time(0));
-    
+
+    /*
+     * Initialize Costas loop
+     */
+     for (int i = 0; i < FRAME_SIZE; i++) {
+        costas_frame[i] = 0.0f;    // complex
+        omega_hat[i] = 0.0f;       // float
+        phi_hat[i] = 0.0f;         // float
+    }
+
     /*
      * Create an RRC filter using the
      * Sample Rate, baud, and Alpha
@@ -339,7 +357,7 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0f) / FS);    // 10 Hz TX Freq Error
 
     for (int k = 0; k < 100; k++) {
         /*
@@ -362,7 +380,7 @@ int main(int argc, char** argv) {
 
     fclose(fout);
 
-    printf("\n\n\n");
+    //printf("\n\n\n");
 
     /*
      * Now try to process what was transmitted
@@ -370,7 +388,7 @@ int main(int argc, char** argv) {
     fin = fopen(TX_FILENAME, "rb");
 
     fbb_rx_phase = cmplx(0.0f);
-    fbb_rx_rect = cmplx(TAU * -CENTER / FS);
+    fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
 
     while (1) {
         /*
