@@ -337,8 +337,7 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);    // add TX Freq Error to center
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);    // add TX Freq Error to center
 
     for (int k = 0; k < 100; k++) {
         /*
