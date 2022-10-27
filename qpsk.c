@@ -148,7 +148,7 @@ void rx_frame(int16_t in[], int bits[]) {
          */
         float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
         
-        omega_hat += (BETA * phi_error_hat); // loop filter
+        omega_hat += (BETA * phi_error_hat);                   // loop filter
         phi_hat += (ALPHA * phi_error_hat) + omega_hat;
     }
 
@@ -369,6 +369,7 @@ int main(int argc, char** argv) {
 
     fbb_rx_phase = cmplx(0.0f);
     fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
+
     /*
      * Initialize Costas loop
      */
