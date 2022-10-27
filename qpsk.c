@@ -31,14 +31,14 @@ static FILE *fout;
 static complex float tx_filter[NTAPS];
 static complex float rx_filter[NTAPS];
 static complex float input_frame[FRAME_SIZE];
-static complex float decimated_frame[128];	// FRAME_SIZE / CYCLES
+static complex float decimated_frame[128];	      // FRAME_SIZE / CYCLES
 
 /*
  * Costas Loop values
  */
-static complex float costas_frame[FRAME_SIZE];
-static float omega_hat = 0.0f;
-static float phi_hat = 0.0f;
+static complex float costas_frame[522];               // FRAME_SIZE + 10 (for timing)
+static float omega_hat;
+static float phi_hat;
 
 // Two phase for full duplex
 
@@ -47,6 +47,8 @@ static complex float fbb_tx_rect;
 
 static complex float fbb_rx_phase;
 static complex float fbb_rx_rect;
+
+static float fbb_offset_freq;
 
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
@@ -127,7 +129,7 @@ void rx_frame(int16_t in[], int bits[]) {
     for (int i = 0; i < FRAME_SIZE; i++) {
         fbb_rx_phase *= fbb_rx_rect;
 
-        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f); 
+        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);
     }
 
     fbb_rx_phase /= cabsf(fbb_rx_phase); // normalize as magnitude can drift
@@ -151,7 +153,14 @@ void rx_frame(int16_t in[], int bits[]) {
         omega_hat += (BETA * phi_error_hat);                   // loop filter
         phi_hat += (ALPHA * phi_error_hat) + omega_hat;
     }
-    
+
+    /*
+     * Save the detected frequency error
+     */
+    fbb_offset_freq = roundf(CENTER + (omega_hat * (FS / TAU)));
+
+    //printf("%.1f\n", fbb_offset_freq);
+
     /*
      * Find maximum absolute I/Q value for one symbol length
      * after passing through the filter
@@ -217,18 +226,23 @@ void rx_frame(int16_t in[], int bits[]) {
      * adjust for the timing error
      */
     for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
-        decimated_frame[i] = costas_frame[(i * CYCLES) + index];
+	int sub = i * CYCLES;
 
+        /*
+         * This will go off the end of the frame
+         * so make the frame = frame + max index value
+         * in frame allocation
+         */
+        decimated_frame[i] = costas_frame[sub + index];
+        
 #ifdef TEST_SCATTER
         fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
 #endif
 
-/*
-        printf("%d ", find_quadrant(decimated_frame[i]));
+        //int quad = find_quadrant(decimated_frame[i]);
 
         //qpsk_demod(decimated_frame[i], rxbits);
-        //printf("%d%d ", rxbits[0], rxbits[1]);
-*/
+        //printf("%d %d%d ", quad, rxbits[0], rxbits[1]);
     }
 }
 
@@ -337,7 +351,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);    // add TX Freq Error to center
+    fbb_tx_rect = cmplx(TAU * CENTER / FS);    // add TX Freq Error to center
+    fbb_offset_freq = CENTER;
+
+    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
+    //fbb_offset_freq = (CENTER + 5.0);
 
     for (int k = 0; k < 100; k++) {
         /*
@@ -359,8 +377,6 @@ int main(int argc, char** argv) {
     }
 
     fclose(fout);
-
-    //printf("\n\n\n");
 
     /*
      * Now try to process what was transmitted
