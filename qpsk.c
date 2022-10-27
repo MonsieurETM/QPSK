@@ -38,8 +38,8 @@ static complex float decimated_frame[128];	// FRAME_SIZE / CYCLES
  */
 static complex float costas_frame[FRAME_SIZE];
 
-static float omega_hat[FRAME_SIZE];
-static float phi_hat[FRAME_SIZE];
+static float omega_hat[513];    // FRAME_SIZE + 1
+static float phi_hat[513];      // FRAME_SIZE + 1;
 
 // Two phase for full duplex
 
@@ -211,7 +211,7 @@ void rx_frame(int16_t in[], int bits[]) {
     /*
      * Costas Loop over the whole input frame
      */
-    for (int i = 0; i < (FRAME_SIZE - 1); i++) {
+    for (int i = 0; i < FRAME_SIZE; i++) {
         costas_frame[i] = input_frame[i] * cmplxconj(phi_hat[i]);  // carrier sync
 
         /*
@@ -235,10 +235,10 @@ void rx_frame(int16_t in[], int bits[]) {
 #endif
 
 /*
-        //printf("%d ", find_quadrant(decimated_frame[i]));
+        printf("%d ", find_quadrant(decimated_frame[i]));
 
-        qpsk_demod(decimated_frame[i], rxbits);
-        printf("%d%d ", rxbits[0], rxbits[1]);
+        //qpsk_demod(decimated_frame[i], rxbits);
+        //printf("%d%d ", rxbits[0], rxbits[1]);
 */
     }
 }
@@ -338,8 +338,7 @@ int main(int argc, char** argv) {
     /*
      * Initialize Costas loop
      */
-     for (int i = 0; i < FRAME_SIZE; i++) {
-        costas_frame[i] = 0.0f;    // complex
+     for (int i = 0; i < (FRAME_SIZE + 1); i++) {
         omega_hat[i] = 0.0f;       // float
         phi_hat[i] = 0.0f;         // float
     }
@@ -357,7 +356,7 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0f) / FS);    // 10 Hz TX Freq Error
+    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0f) / FS);    // add TX Freq Error to center
 
     for (int k = 0; k < 100; k++) {
         /*
