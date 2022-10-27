@@ -37,9 +37,8 @@ static complex float decimated_frame[128];	// FRAME_SIZE / CYCLES
  * Costas Loop values
  */
 static complex float costas_frame[FRAME_SIZE];
-
-static float omega_hat[513];    // FRAME_SIZE + 1
-static float phi_hat[513];      // FRAME_SIZE + 1;
+static float omega_hat = 0.0f;
+static float phi_hat = 0.0f;
 
 // Two phase for full duplex
 
@@ -142,15 +141,15 @@ void rx_frame(int16_t in[], int bits[]) {
      * Costas Loop over the whole filtered input frame
      */
     for (int i = 0; i < FRAME_SIZE; i++) {
-        costas_frame[i] = input_frame[i] * cmplxconj(phi_hat[i]);  // carrier sync
+        costas_frame[i] = input_frame[i] * cmplxconj(phi_hat);  // carrier sync
 
         /*
          * Compute 4th-Order phase error (remove modulation)
          */
         float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
         
-        omega_hat[i+1] = omega_hat[i] + (BETA * phi_error_hat); // loop filter
-        phi_hat[i+1] = phi_hat[i] + (ALPHA * phi_error_hat) + omega_hat[i+1];
+        omega_hat += (BETA * phi_error_hat); // loop filter
+        phi_hat += (ALPHA * phi_error_hat) + omega_hat;
     }
 
     /*
@@ -326,14 +325,6 @@ int main(int argc, char** argv) {
     srand(time(0));
 
     /*
-     * Initialize Costas loop
-     */
-     for (int i = 0; i < (FRAME_SIZE + 1); i++) {
-        omega_hat[i] = 0.0f;
-        phi_hat[i] = 0.0f;
-    }
-
-    /*
      * Create an RRC filter using the
      * Sample Rate, baud, and Alpha
      */
@@ -378,6 +369,11 @@ int main(int argc, char** argv) {
 
     fbb_rx_phase = cmplx(0.0f);
     fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
+    /*
+     * Initialize Costas loop
+     */
+    omega_hat = 0.0f;
+    phi_hat = 0.0f;
 
     while (1) {
         /*

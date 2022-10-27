@@ -32,15 +32,14 @@ extern "C"
 #define TAU             (2.0 * M_PI)
 #define ROTATE45        (M_PI / 4.0)
 
-#define ALPHA		0.015
+#define ALPHA		0.010
 #define BETA		(ALPHA * ALPHA)
 
 /*
  * This method is much faster than using cexp()
- * float_value - must be a float
  */
-#define cmplx(float_value) (cosf(float_value) + sinf(float_value) * I)
-#define cmplxconj(float_value) (cosf(float_value) + sinf(float_value) * -I)
+#define cmplx(value) (cosf(value) + sinf(value) * I)
+#define cmplxconj(value) (cosf(value) + sinf(value) * -I)
 
 typedef struct
 {
