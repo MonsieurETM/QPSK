@@ -147,11 +147,11 @@ void rx_frame(int16_t in[], int bits[]) {
          * Compute 4th-Order phase error (remove modulation)
          */
         float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
-        
+
         omega_hat += (BETA * phi_error_hat);                   // loop filter
         phi_hat += (ALPHA * phi_error_hat) + omega_hat;
     }
-
+    
     /*
      * Find maximum absolute I/Q value for one symbol length
      * after passing through the filter
@@ -203,12 +203,12 @@ void rx_frame(int16_t in[], int bits[]) {
 
     int hist[8] = { 0 };
     
-    for (int j = 0; j < 8; j++) {            
-        hist[j] = (hist_i[j] + hist_q[j]);
+    for (int i = 0; i < 8; i++) {            
+        hist[i] = (hist_i[i] + hist_q[i]);
 
-        if (hist[j] > hmax) {
-            hmax = hist[j];
-            index = j;
+        if (hist[i] > hmax) {
+            hmax = hist[i];
+            index = i;
         }
     }
 
@@ -337,7 +337,8 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);    // add TX Freq Error to center
+    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);    // add TX Freq Error to center
+    fbb_tx_rect = cmplx(TAU * CENTER / FS);
 
     for (int k = 0; k < 100; k++) {
         /*
