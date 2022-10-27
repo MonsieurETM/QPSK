@@ -67,16 +67,6 @@ static float cnormf(complex float val) {
     return realf * realf + imagf * imagf;
 }
 
-void set_qpsk_rx_offset(float fshift) {
-    float val = TAU * (fshift / FS);
-    
-    if (fshift < 0.0f) {
-        fbb_rx_rect *= cmplxconj(val);
-    } else {
-        fbb_rx_rect *= cmplx(val);
-    }
-}
-
 /*
  * This algorithm would be used with a
  * Viterbi decoder.
@@ -138,7 +128,7 @@ void rx_frame(int16_t in[], int bits[]) {
     for (int i = 0; i < FRAME_SIZE; i++) {
         fbb_rx_phase *= fbb_rx_rect;
 
-        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);
+        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f); 
     }
 
     fbb_rx_phase /= cabsf(fbb_rx_phase); // normalize as magnitude can drift
@@ -149,13 +139,28 @@ void rx_frame(int16_t in[], int bits[]) {
     rrc_fir(rx_filter, input_frame, FRAME_SIZE);
 
     /*
+     * Costas Loop over the whole filtered input frame
+     */
+    for (int i = 0; i < FRAME_SIZE; i++) {
+        costas_frame[i] = input_frame[i] * cmplxconj(phi_hat[i]);  // carrier sync
+
+        /*
+         * Compute 4th-Order phase error (remove modulation)
+         */
+        float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
+        
+        omega_hat[i+1] = omega_hat[i] + (BETA * phi_error_hat); // loop filter
+        phi_hat[i+1] = phi_hat[i] + (ALPHA * phi_error_hat) + omega_hat[i+1];
+    }
+
+    /*
      * Find maximum absolute I/Q value for one symbol length
      * after passing through the filter
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         for (int j = 0; j < CYCLES; j++) {
-            av_i += fabsf(crealf(input_frame[i+j]));
-            av_q += fabsf(cimagf(input_frame[i+j]));
+            av_i += fabsf(crealf(costas_frame[i+j]));
+            av_q += fabsf(cimagf(costas_frame[i+j]));
         }
         
         av_i /= CYCLES;
@@ -206,21 +211,6 @@ void rx_frame(int16_t in[], int bits[]) {
             hmax = hist[j];
             index = j;
         }
-    }
-
-    /*
-     * Costas Loop over the whole input frame
-     */
-    for (int i = 0; i < FRAME_SIZE; i++) {
-        costas_frame[i] = input_frame[i] * cmplxconj(phi_hat[i]);  // carrier sync
-
-        /*
-         * Compute 4th-Order phase error (remove modulation)
-         */
-        float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
-        
-        omega_hat[i+1] = omega_hat[i] + (BETA * phi_error_hat); // loop filter
-        phi_hat[i+1] = phi_hat[i] + (ALPHA * phi_error_hat) + omega_hat[i+1];
     }
 
     /*
@@ -339,8 +329,8 @@ int main(int argc, char** argv) {
      * Initialize Costas loop
      */
      for (int i = 0; i < (FRAME_SIZE + 1); i++) {
-        omega_hat[i] = 0.0f;       // float
-        phi_hat[i] = 0.0f;         // float
+        omega_hat[i] = 0.0f;
+        phi_hat[i] = 0.0f;
     }
 
     /*
@@ -356,7 +346,7 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0f) / FS);    // add TX Freq Error to center
+    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);    // add TX Freq Error to center
 
     for (int k = 0; k < 100; k++) {
         /*

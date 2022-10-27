@@ -16,9 +16,9 @@ extern "C"
 #define FS              9600.0
 #define RS              2400.0
 #define NS              8
-#define TS              (1.0f / RS)
+#define TS              (1.0 / RS)
 #define CYCLES          (int) (FS / RS)
-#define CENTER          1500.0f
+#define CENTER          1500.0
 
 #define DATA_SYMBOLS    32
 
@@ -32,7 +32,7 @@ extern "C"
 #define TAU             (2.0 * M_PI)
 #define ROTATE45        (M_PI / 4.0)
 
-#define ALPHA		0.015f
+#define ALPHA		0.015
 #define BETA		(ALPHA * ALPHA)
 
 /*
