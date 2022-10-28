@@ -141,7 +141,6 @@ void rx_frame(int16_t in[], int bits[]) {
 
     /*
      * Costas Loop over the whole filtered input frame
-     * adjust for the timing error using index
      */
     for (int i = 0; i < FRAME_SIZE; i++) {
         costas_frame[i] = input_frame[i] * cmplxconj(phi_hat);  // carrier sync
@@ -224,6 +223,7 @@ void rx_frame(int16_t in[], int bits[]) {
 
     /*
      * Decimate by 4 to the 2400 symbol rate
+     * adjust for the timing error using index
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         /*
