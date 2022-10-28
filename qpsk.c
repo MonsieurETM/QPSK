@@ -31,12 +31,12 @@ static FILE *fout;
 static complex float tx_filter[NTAPS];
 static complex float rx_filter[NTAPS];
 static complex float input_frame[FRAME_SIZE];
-static complex float decimated_frame[128];	      // FRAME_SIZE / CYCLES
+static complex float decimated_frame[128];             // FRAME_SIZE / CYCLES
 
 /*
  * Costas Loop values
  */
-static complex float costas_frame[522];               // FRAME_SIZE + 10 (for timing)
+static complex float costas_frame[522];                // FRAME_SIZE + 10 (for timing)
 static float omega_hat;
 static float phi_hat;
 
@@ -141,6 +141,7 @@ void rx_frame(int16_t in[], int bits[]) {
 
     /*
      * Costas Loop over the whole filtered input frame
+     * adjust for the timing error using index
      */
     for (int i = 0; i < FRAME_SIZE; i++) {
         costas_frame[i] = input_frame[i] * cmplxconj(phi_hat);  // carrier sync
@@ -159,8 +160,8 @@ void rx_frame(int16_t in[], int bits[]) {
      */
     fbb_offset_freq = roundf(CENTER + (omega_hat * (FS / TAU)));
 
-    //printf("%.1f\n", fbb_offset_freq);
-
+    printf("Frequency Error = %.1f\n", fbb_offset_freq);
+    
     /*
      * Find maximum absolute I/Q value for one symbol length
      * after passing through the filter
@@ -223,18 +224,15 @@ void rx_frame(int16_t in[], int bits[]) {
 
     /*
      * Decimate by 4 to the 2400 symbol rate
-     * adjust for the timing error
      */
-    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
-	int sub = i * CYCLES;
-
+    for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         /*
          * This will go off the end of the frame
          * so make the frame = frame + max index value
          * in frame allocation
          */
-        decimated_frame[i] = costas_frame[sub + index];
-        
+        decimated_frame[i] = costas_frame[i + index];
+
 #ifdef TEST_SCATTER
         fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
 #endif
@@ -351,11 +349,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);    // add TX Freq Error to center
-    fbb_offset_freq = CENTER;
+    //fbb_tx_rect = cmplx(TAU * CENTER / FS);    // add TX Freq Error to center
+    //fbb_offset_freq = CENTER;
 
-    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
-    //fbb_offset_freq = (CENTER + 5.0);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
+    fbb_offset_freq = (CENTER + 5.0);
 
     for (int k = 0; k < 100; k++) {
         /*
