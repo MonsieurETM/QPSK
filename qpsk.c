@@ -30,13 +30,14 @@ static FILE *fout;
 
 static complex float tx_filter[NTAPS];
 static complex float rx_filter[NTAPS];
+
 static complex float input_frame[FRAME_SIZE];
-static complex float decimated_frame[128];             // FRAME_SIZE / CYCLES
+static complex float costas_frame[FRAME_SIZE];
 
 /*
  * Costas Loop values
  */
-static complex float costas_frame[522];                // FRAME_SIZE + 10 (for timing)
+
 static float omega_hat;
 static float phi_hat;
 
@@ -148,18 +149,18 @@ void rx_frame(int16_t in[], int bits[]) {
         /*
          * Compute 4th-Order phase error (remove modulation)
          */
-        float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
+        float phi_error_hat = carg(cpow(costas_frame[i], 4.0));
 
         omega_hat += (BETA * phi_error_hat);                   // loop filter
-        phi_hat += (ALPHA * phi_error_hat) + omega_hat;
+        phi_hat += ((ALPHA * phi_error_hat) + omega_hat);
     }
 
     /*
      * Save the detected frequency error
      */
-    fbb_offset_freq = roundf(CENTER + (omega_hat * (FS / TAU)));
-
-    printf("Frequency Error = %.1f\n", fbb_offset_freq);
+    fbb_offset_freq = (omega_hat * (FS / TAU));
+    
+    //printf("Frequency Error = %.1f\n", fbb_offset_freq);
     
     /*
      * Find maximum absolute I/Q value for one symbol length
@@ -226,21 +227,23 @@ void rx_frame(int16_t in[], int bits[]) {
      * adjust for the timing error using index
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
+        int j = (i + index);
+        complex float val = costas_frame[j];
+
         /*
-         * This will go off the end of the frame
-         * so make the frame = frame + max index value
-         * in frame allocation
+         * [i + index] may go off the end of frame
+         * so we'll have to just skip those values
          */
-        decimated_frame[i] = costas_frame[i + index];
+        if (j <= MAXINDEX) {
 
 #ifdef TEST_SCATTER
-        fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
+            fprintf(stderr, "%f %f\n", crealf(val), cimagf(val));
 #endif
 
-        //int quad = find_quadrant(decimated_frame[i]);
+            //int quad = find_quadrant(val);
 
-        //qpsk_demod(decimated_frame[i], rxbits);
-        //printf("%d %d%d ", quad, rxbits[0], rxbits[1]);
+            //printf("%d ", quad);
+        }
     }
 }
 
@@ -249,22 +252,6 @@ void rx_frame(int16_t in[], int bits[]) {
  */
 complex float qpsk_mod(int bits[]) {
     return constellation[(bits[1] << 1) | bits[0]];
-}
-
-/*
- * Gray coded QPSK demodulation function
- *
- * By rotating received symbol 45 degrees left the
- * bits are easier to decode as they are in a specific
- * rectangular quadrant.
- * 
- * Each bit pair differs from the next by only one bit.
- */
-void qpsk_demod(complex float symbol, int bits[]) {
-    complex float rotate = symbol * cmplx(ROTATE45);
-
-    bits[0] = crealf(rotate) < 0.0f; // I < 0 ?
-    bits[1] = cimagf(rotate) < 0.0f; // Q < 0 ?
 }
 
 /*

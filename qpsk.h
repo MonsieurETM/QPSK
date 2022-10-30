@@ -24,13 +24,13 @@ extern "C"
 
 #define DATA_SAMPLES    (DATA_SYMBOLS * CYCLES * NS)
 #define FRAME_SIZE      512
+#define MAXINDEX        511
 
 #ifndef M_PI
 #define M_PI            3.14159265358979323846
 #endif
 
 #define TAU             (2.0 * M_PI)
-#define ROTATE45        (M_PI / 4.0)
 
 #define ALPHA		0.010
 #define BETA		(ALPHA * ALPHA)
