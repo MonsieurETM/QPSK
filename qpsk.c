@@ -149,7 +149,7 @@ void rx_frame(int16_t in[], int bits[]) {
         /*
          * Compute 4th-Order phase error (remove modulation)
          */
-        float phi_error_hat = carg(cpow(costas_frame[i], 4.0));
+        float phi_error_hat = carg(cpowf(costas_frame[i], 4.0));
 
         omega_hat += (BETA * phi_error_hat);                   // loop filter
         phi_hat += ((ALPHA * phi_error_hat) + omega_hat);
