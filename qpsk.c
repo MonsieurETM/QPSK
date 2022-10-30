@@ -228,13 +228,13 @@ void rx_frame(int16_t in[], int bits[]) {
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         int j = (i + index);
-        complex float val = costas_frame[j];
 
         /*
          * [i + index] may go off the end of frame
          * so we'll have to just skip those values
          */
         if (j <= MAXINDEX) {
+	    complex float val = costas_frame[j];
 
 #ifdef TEST_SCATTER
             fprintf(stderr, "%f %f\n", crealf(val), cimagf(val));
