@@ -32,7 +32,8 @@ static complex float tx_filter[NTAPS];
 static complex float rx_filter[NTAPS];
 
 static complex float input_frame[FRAME_SIZE];
-static complex float costas_frame[FRAME_SIZE];
+static complex float costas_frame[522];		// allow for index overflow
+static complex float decimated_frame[256];
 
 /*
  * Costas Loop values
@@ -227,23 +228,15 @@ void rx_frame(int16_t in[], int bits[]) {
      * adjust for the timing error using index
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
-        int j = (i + index);
-
-        /*
-         * [i + index] may go off the end of frame
-         * so we'll have to just skip those values
-         */
-        if (j <= MAXINDEX) {
-	    complex float val = costas_frame[j];
+        complex float symbol = costas_frame[i + index]; // costas frame should be greater than FRAME_SIZE + max index
 
 #ifdef TEST_SCATTER
-            fprintf(stderr, "%f %f\n", crealf(val), cimagf(val));
+        fprintf(stderr, "%f %f\n", crealf(symbol), cimagf(symbol));
 #endif
 
-            //int quad = find_quadrant(val);
+        //int quad = find_quadrant(symbol);
 
-            //printf("%d ", quad);
-        }
+        //printf("%d ", quad);
     }
 }
 

@@ -24,7 +24,6 @@ extern "C"
 
 #define DATA_SAMPLES    (DATA_SYMBOLS * CYCLES * NS)
 #define FRAME_SIZE      512
-#define MAXINDEX        511
 
 #ifndef M_PI
 #define M_PI            3.14159265358979323846
@@ -32,7 +31,7 @@ extern "C"
 
 #define TAU             (2.0 * M_PI)
 
-#define ALPHA		0.010
+#define ALPHA		0.015
 #define BETA		(ALPHA * ALPHA)
 
 /*
@@ -41,20 +40,10 @@ extern "C"
 #define cmplx(value) (cosf(value) + sinf(value) * I)
 #define cmplxconj(value) (cosf(value) + sinf(value) * -I)
 
-typedef struct
-{
-    int data;
-    int tx_symb;
-    float cost;
-    complex float rx_symb;
-} Rxed;
-
 /* Prototypes */
 
 complex float qpsk_mod(int []);
-void qpsk_demod(complex float, int []);
 
-int bpsk_pilot_modulate(int16_t []);
 int qpsk_data_modulate(int16_t [], int [], int);
 
 int tx_frame(int16_t [], complex float [], int);
