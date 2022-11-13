@@ -139,26 +139,6 @@ void rx_frame(int16_t in[], int bits[]) {
      */
     rrc_fir(rx_filter, input_frame, FRAME_SIZE);
 
-    /*
-     * Costas Loop over the whole filtered input frame
-     */
-    for (int i = 0; i < FRAME_SIZE; i++) {
-        costas_frame[i] = input_frame[i] * cmplxconj(get_phase());
-
-        d_error = phase_detector(costas_frame[i]);
-printf("%.1f %f\n", d_error, get_phase());
-        advance_loop(d_error);
-        phase_wrap();
-        frequency_limit();
-    }
-
-    /*
-     * Save the detected frequency error
-     */
-    fbb_offset_freq = (get_frequency() * FS / TAU);
-    
-    //printf("Frequency Error = %.1f\n", fbb_offset_freq);
-
     float max_i = 0.0f;
     float max_q = 0.0f;
 
@@ -178,8 +158,8 @@ printf("%.1f %f\n", d_error, get_phase());
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         for (int j = 0; j < CYCLES; j++) {
-            av_i += fabsf(crealf(costas_frame[i+j]));
-            av_q += fabsf(cimagf(costas_frame[i+j]));
+            av_i += fabsf(crealf(input_frame[i+j]));
+            av_q += fabsf(cimagf(input_frame[i+j]));
         }
         
         av_i /= CYCLES;
@@ -232,23 +212,32 @@ printf("%.1f %f\n", d_error, get_phase());
         }
     }
 
-    //printf("Index = %d\n", index);
-
     /*
      * Decimate by 4 to the 2400 symbol rate
      * adjust for the timing error using index
+     *
+     * Costas Loop over the whole filtered input frame
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
-        complex float symbol = costas_frame[i + index]; // costas frame should be greater than FRAME_SIZE + max index
+        costas_frame[i] = input_frame[i + index] * cmplxconj(get_phase());
 
 #ifdef TEST_SCATTER
-        fprintf(stderr, "%f %f\n", crealf(symbol), cimagf(symbol));
+        fprintf(stderr, "%f %f\n", crealf(costas_frame[i]), cimagf(costas_frame[i]));
 #endif
 
-        //int quad = find_quadrant(symbol);
+        d_error = phase_detector(costas_frame[i]);
 
-        //printf("%d ", quad);
+        advance_loop(d_error);
+        phase_wrap();
+        frequency_limit();
     }
+
+    /*
+     * Save the detected frequency error
+     */
+    fbb_offset_freq = CENTER + (get_frequency() * FS / TAU);
+    
+    //printf("Frequency Error = %.1f\n", fbb_offset_freq);
 }
 
 /*
@@ -331,9 +320,9 @@ int main(int argc, char** argv) {
      * All terms are radians per sample.
      *
      * The loop bandwidth determins the lock range
-     * and should be set around 2pi/200 to 2pi/100
+     * and should be set around 2pi/100 to 2pi/200
      */
-    create_control_loop((TAU / 150.0f), 1.0f, -1.0f);
+    create_control_loop((TAU / 200.0f), 1.6f, -1.6f);
 
     /*
      * Create an RRC filter using the
