@@ -7,6 +7,10 @@ There also needs to be a frequency error adjustment. Not so much for fixed radio
 
 The testing program uses Octave to generate the scatter plot. This is not really needed, but used to check progress.
 
-The costas loop is not working yet. It's gimped somewhere...
+Here's the transmit spectrum as viewed in audacity:
+
+<img src="spectrum.png" width="400">  
+
+The receive costas loop is not working yet. It's gimped somewhere...
 
 <img src="scatter.png" width="400">  

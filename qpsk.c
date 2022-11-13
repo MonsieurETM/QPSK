@@ -71,6 +71,7 @@ static float phase_detector(complex float sample) {
             (cimagf(sample) > 0.0f ? 1.0f : -1.0f) * crealf(sample));
 }
 
+#ifdef FILTER
 static float convolve(const float *data, const float *filter, int filter_size) {
 	float sum = 0.0f;
 
@@ -80,6 +81,7 @@ static float convolve(const float *data, const float *filter, int filter_size) {
 
 	return sum;
 }
+#endif
 
 /*
  * This algorithm would be used with a
@@ -144,7 +146,7 @@ void rx_frame(int16_t in[], int bits[]) {
         costas_frame[i] = input_frame[i] * cmplxconj(get_phase());
 
         d_error = phase_detector(costas_frame[i]);
-
+printf("%.1f %f\n", d_error, get_phase());
         advance_loop(d_error);
         phase_wrap();
         frequency_limit();
@@ -331,7 +333,7 @@ int main(int argc, char** argv) {
      * The loop bandwidth determins the lock range
      * and should be set around 2pi/200 to 2pi/100
      */
-    create_control_loop((M_PI / 150.0f), 1.0f, -1.0f);
+    create_control_loop((TAU / 150.0f), 1.0f, -1.0f);
 
     /*
      * Create an RRC filter using the
@@ -346,7 +348,7 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);    // add TX Freq Error to center
+    fbb_tx_rect = cmplx(TAU * CENTER / FS);
     fbb_offset_freq = CENTER;
 
     //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
