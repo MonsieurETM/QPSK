@@ -5,8 +5,9 @@ extern "C"
 {
 #endif
 
+#include <complex.h>
+
 void create_costas(float);
-void costas(complex float *);
 void create_control_loop(float, float, float);
 void update_gains(void);
 void advance_loop(float);
@@ -26,12 +27,12 @@ void set_min_freq(float);
 
 // Getters
 
-float get_loop_bandwidth();
-float get_damping_factor();
-float get_alpha();
-float get_beta();
-float get_frequency();
-float get_phase();
+float get_loop_bandwidth(void);
+float get_damping_factor(void);
+float get_alpha(void);
+float get_beta(void);
+float get_frequency(void);
+float get_phase(void);
 float get_max_freq(void);
 float get_min_freq(void);
 
