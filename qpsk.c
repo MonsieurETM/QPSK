@@ -325,7 +325,13 @@ int main(int argc, char** argv) {
 
     srand(time(0));
 
-    create_control_loop((M_PI / 100.0f), 1.0f, -1.0f);
+    /*
+     * All terms are radians per sample.
+     *
+     * The loop bandwidth determins the lock range
+     * and should be set around 2pi/200 to 2pi/100
+     */
+    create_control_loop((M_PI / 150.0f), 1.0f, -1.0f);
 
     /*
      * Create an RRC filter using the

@@ -32,7 +32,7 @@ void create_control_loop(float loop_bw, float min_freq, float max_freq) {
 
     set_damping_factor(sqrtf(2.0f) / 2.0f);
 
-    // Calls update_gains()
+    // Calls update_gains() which sets alpha and beta
     set_loop_bandwidth(loop_bw);
 }
 
