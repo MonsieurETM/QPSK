@@ -215,9 +215,9 @@ void rx_frame(int16_t in[], int bits[]) {
     /*
      * Save the detected frequency error
      */
-    fbb_offset_freq = (get_frequency() * RS / TAU);
+    fbb_offset_freq = (get_frequency() * RS / TAU);	// convert radians to freq at symbol rate
     
-    printf("Frequency Error = %.1f\n", fbb_offset_freq);
+    //printf("Frequency Error = %.1f\n", fbb_offset_freq);
 }
 
 /*
