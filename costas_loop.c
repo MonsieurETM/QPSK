@@ -1,3 +1,8 @@
+/*
+ * Copyright 2006,2011,2012,2014 Free Software Foundation, Inc.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 #include <complex.h>
 #include <math.h>
@@ -21,7 +26,7 @@ static float d_beta;
  * A Costas loop carrier recovery algorithm.
  *
  * The Costas loop locks to the center frequency of a signal and
- * downconverts it to baseband.
+ * downconverts signal to baseband.
  */
 void create_control_loop(float loop_bw, float min_freq, float max_freq) {
     set_phase(0.0f);

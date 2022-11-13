@@ -1,3 +1,9 @@
+/*
+ * Copyright 2006,2011,2012,2014 Free Software Foundation, Inc.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 #pragma once
 
 #ifdef __cplusplus
