@@ -11,6 +11,6 @@ Here's the transmit spectrum as viewed in audacity:
 
 <img src="spectrum.png" width="400">  
 
-The receive costas loop is not working yet. It's gimped somewhere...
+The receive costas loop is not fully debugged, but looks reasonable so far...
 
 <img src="scatter.png" width="400">  
