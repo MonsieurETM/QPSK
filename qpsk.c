@@ -33,8 +33,8 @@ static complex float tx_filter[NTAPS];
 static complex float rx_filter[NTAPS];
 
 static complex float input_frame[FRAME_SIZE];
-static complex float costas_frame[522];		// allow for index overflow
-static complex float decimated_frame[256];
+static complex float decimated_frame[264];
+static complex float costas_frame[128];
 
 // Two phase for full duplex
 
@@ -71,48 +71,20 @@ static float phase_detector(complex float sample) {
             (cimagf(sample) > 0.0f ? 1.0f : -1.0f) * crealf(sample));
 }
 
-#ifdef FILTER
-static float convolve(const float *data, const float *filter, int filter_size) {
-	float sum = 0.0f;
-
-	for (int i = 0; i < filter_size; i++) {
-	    sum += filter[i] * data[i];
-	}
-
-	return sum;
-}
-#endif
-
 /*
- * This algorithm would be used with a
- * Viterbi decoder.
+ * Gray coded QPSK demodulation function
+ *
+ * By rotating received symbol 45 degrees the bits
+ * are easier to decode as they are in a specific
+ * rectangular quadrant.
+ * 
+ * Each bit pair differs from the next by only one bit.
  */
-static int find_quadrant(complex float symbol) {
-    float quadrant;
+void qpsk_demod(complex float symbol, int bits[]) {
+    complex float rotate = symbol * cmplx(ROTATE45);
 
-    /*
-     * The smallest distance between constellation
-     * and the symbol, is our gray coded quadrant.
-     * 
-     *      1
-     *      |
-     *  3---+---0
-     *      |
-     *      2
-     */
-
-    float min_value = 200.0f; // some large value
-
-    for (int i = 0; i < 4; i++) {
-        float dist = cnormf(symbol - constellation[i]);
-
-        if (dist < min_value) {
-            min_value = dist;
-            quadrant = i;
-        }
-    }
-
-    return quadrant;
+    bits[0] = crealf(rotate) < 0.0f; // I < 0 ?
+    bits[1] = cimagf(rotate) < 0.0f; // Q < 0 ?
 }
 
 /*
@@ -215,11 +187,19 @@ void rx_frame(int16_t in[], int bits[]) {
     /*
      * Decimate by 4 to the 2400 symbol rate
      * adjust for the timing error using index
-     *
-     * Costas Loop over the whole filtered input frame
      */
-    for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
-        costas_frame[i] = input_frame[i + index] * cmplxconj(get_phase());
+    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
+        int extended = (FRAME_SIZE / CYCLES) + i; // compute once
+        
+        decimated_frame[i] = decimated_frame[extended];			// use previous frame
+        decimated_frame[extended] = input_frame[(i * CYCLES) + index];	// current frame
+    }
+
+    /*
+     * Costas Loop over the decimated frame
+     */
+    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
+       costas_frame[i] = decimated_frame[i] * cmplxconj(get_phase());
 
 #ifdef TEST_SCATTER
         fprintf(stderr, "%f %f\n", crealf(costas_frame[i]), cimagf(costas_frame[i]));
@@ -235,9 +215,9 @@ void rx_frame(int16_t in[], int bits[]) {
     /*
      * Save the detected frequency error
      */
-    fbb_offset_freq = CENTER + (get_frequency() * FS / TAU);
+    fbb_offset_freq = (get_frequency() * RS / TAU);
     
-    //printf("Frequency Error = %.1f\n", fbb_offset_freq);
+    printf("Frequency Error = %.1f\n", fbb_offset_freq);
 }
 
 /*
@@ -322,7 +302,7 @@ int main(int argc, char** argv) {
      * The loop bandwidth determins the lock range
      * and should be set around 2pi/100 to 2pi/200
      */
-    create_control_loop((TAU / 200.0f), 1.6f, -1.6f);
+    create_control_loop((TAU / 200.0f), -1.6f, 1.6f);
 
     /*
      * Create an RRC filter using the
@@ -337,11 +317,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);
-    fbb_offset_freq = CENTER;
+    //fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    //fbb_offset_freq = CENTER;
 
-    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
-    //fbb_offset_freq = (CENTER + 5.0);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
+    fbb_offset_freq = (CENTER + 5.0);
 
     for (int k = 0; k < 100; k++) {
         /*

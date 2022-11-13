@@ -30,6 +30,7 @@ extern "C"
 #endif
 
 #define TAU             (2.0 * M_PI)
+#define ROTATE45        (M_PI / 4.0)
 
 #define ALPHA		0.010
 #define BETA		(ALPHA * ALPHA)
@@ -43,6 +44,7 @@ extern "C"
 /* Prototypes */
 
 complex float qpsk_mod(int []);
+void qpsk_demod(complex float, int []);
 
 int qpsk_data_modulate(int16_t [], int [], int);
 
