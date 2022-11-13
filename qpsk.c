@@ -1,7 +1,7 @@
 /*
  * qpsk.c
  *
- * Testing program for qpsk modem algorithms, October 2022
+ * Testing program for qpsk modem algorithms, November 2022
  */
 
 // Includes
@@ -16,6 +16,7 @@
 #include <math.h>
 
 #include "qpsk.h"
+#include "costas_loop.h"
 #include "rrc_fir.h"
 
 // Prototypes
@@ -35,13 +36,6 @@ static complex float input_frame[FRAME_SIZE];
 static complex float costas_frame[522];		// allow for index overflow
 static complex float decimated_frame[256];
 
-/*
- * Costas Loop values
- */
-
-static float omega_hat;
-static float phi_hat;
-
 // Two phase for full duplex
 
 static complex float fbb_tx_phase;
@@ -51,6 +45,8 @@ static complex float fbb_rx_phase;
 static complex float fbb_rx_rect;
 
 static float fbb_offset_freq;
+
+static float d_error;
 
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
@@ -68,6 +64,21 @@ static float cnormf(complex float val) {
     float imagf = cimagf(val);
 
     return realf * realf + imagf * imagf;
+}
+
+static float phase_detector(complex float sample) {
+    return ((crealf(sample) > 0.0f ? 1.0f : -1.0f) * cimagf(sample) -
+            (cimagf(sample) > 0.0f ? 1.0f : -1.0f) * crealf(sample));
+}
+
+static float convolve(const float *data, const float *filter, int filter_size) {
+	float sum = 0.0f;
+
+	for (int i = 0; i < filter_size; i++) {
+	    sum += filter[i] * data[i];
+	}
+
+	return sum;
 }
 
 /*
@@ -109,21 +120,6 @@ static int find_quadrant(complex float symbol) {
  * Remove any frequency and timing offsets
  */
 void rx_frame(int16_t in[], int bits[]) {
-    float max_i = 0.0f;
-    float max_q = 0.0f;
-
-    float av_i = 0.0f;;
-    float av_q = 0.0f;
-
-    //int rxbits[2];
-    
-    /*
-     * You need as many histograms as you think
-     * you'll need for timing offset. Using 8 for now.
-     */
-    int hist_i[8] = { 0 };
-    int hist_q[8] = { 0 };
-
     /*
      * Convert input PCM to complex samples
      * at 9600 Hz sample rate
@@ -145,23 +141,34 @@ void rx_frame(int16_t in[], int bits[]) {
      * Costas Loop over the whole filtered input frame
      */
     for (int i = 0; i < FRAME_SIZE; i++) {
-        costas_frame[i] = input_frame[i] * cmplxconj(phi_hat);  // carrier sync
+        costas_frame[i] = input_frame[i] * cmplxconj(get_phase());
 
-        /*
-         * Compute 4th-Order phase error (remove modulation)
-         */
-        float phi_error_hat = cargf(cpowf(costas_frame[i], 4.0f));
+        d_error = phase_detector(costas_frame[i]);
 
-        omega_hat += (BETA * phi_error_hat);                   // loop filter
-        phi_hat += ((ALPHA * phi_error_hat) + omega_hat);
+        advance_loop(d_error);
+        phase_wrap();
+        frequency_limit();
     }
 
     /*
      * Save the detected frequency error
      */
-    fbb_offset_freq = (omega_hat * (FS / TAU));
+    fbb_offset_freq = (get_frequency() * FS / TAU);
     
     //printf("Frequency Error = %.1f\n", fbb_offset_freq);
+
+    float max_i = 0.0f;
+    float max_q = 0.0f;
+
+    float av_i = 0.0f;;
+    float av_q = 0.0f;
+    
+    /*
+     * You need as many histograms as you think
+     * you'll need for timing offset. Using 8 for now.
+     */
+    int hist_i[8] = { 0 };
+    int hist_q[8] = { 0 };
     
     /*
      * Find maximum absolute I/Q value for one symbol length
@@ -222,6 +229,8 @@ void rx_frame(int16_t in[], int bits[]) {
             index = i;
         }
     }
+
+    //printf("Index = %d\n", index);
 
     /*
      * Decimate by 4 to the 2400 symbol rate
@@ -316,6 +325,8 @@ int main(int argc, char** argv) {
 
     srand(time(0));
 
+    create_control_loop((M_PI / 100.0f), 1.0f, -1.0f);
+
     /*
      * Create an RRC filter using the
      * Sample Rate, baud, and Alpha
@@ -329,11 +340,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    //fbb_tx_rect = cmplx(TAU * CENTER / FS);    // add TX Freq Error to center
-    //fbb_offset_freq = CENTER;
+    fbb_tx_rect = cmplx(TAU * CENTER / FS);    // add TX Freq Error to center
+    fbb_offset_freq = CENTER;
 
-    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
-    fbb_offset_freq = (CENTER + 5.0);
+    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
+    //fbb_offset_freq = (CENTER + 5.0);
 
     for (int k = 0; k < 100; k++) {
         /*
@@ -363,12 +374,6 @@ int main(int argc, char** argv) {
 
     fbb_rx_phase = cmplx(0.0f);
     fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
-
-    /*
-     * Initialize Costas loop
-     */
-    omega_hat = 0.0f;
-    phi_hat = 0.0f;
 
     while (1) {
         /*

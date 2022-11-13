@@ -31,7 +31,7 @@ extern "C"
 
 #define TAU             (2.0 * M_PI)
 
-#define ALPHA		0.015
+#define ALPHA		0.010
 #define BETA		(ALPHA * ALPHA)
 
 /*
