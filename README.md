@@ -7,7 +7,6 @@ There also needs to be a frequency error adjustment. Not so much for fixed radio
 
 The testing program uses Octave to generate the scatter plot. This is not really needed, but used to check progress.
 
-Here's my output from my costas loop frequency correction attempt. The TX frequency error was set to 5 Hz.   
-The costas loop creates a little slop, but the quadrant finder will still work +/- 40 Hz error.
+The costas loop is not working yet. It's gimped somewhere...
 
 <img src="scatter.png" width="400">  
