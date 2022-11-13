@@ -3,7 +3,7 @@ This project is to design a 9600 bit/s QPSK 2400 Baud modem that does not requir
 
 In theory, we don't know where the QPSK time-domain symbols begin. So we average the amplitudes over a cycle. Then we generate seven (7) histograms based on the sample point. The histogram with the highest count is the winner. At this point we declare the proper index to add during demodulation (after decimation) at the modem signal rate (2400 Baud).
 
-There also needs to be a frequency error adjustment. Not so much for fixed radio sites (VHF/UHF), as they don't move, but when mobile, of course, will have a Doppler shift to be corrected. Solutions via ```pull request``` considered.
+There also needs to be a frequency error adjustment. Not so much for fixed radio sites (VHF/UHF), as they don't move, but when mobile, of course, will have a Doppler shift to be corrected. I decided to port the GNU Radio costas loop C++ code to C and merge that with the receiver code.
 
 The testing program uses Octave to generate the scatter plot. This is not really needed, but used to check progress.
 
