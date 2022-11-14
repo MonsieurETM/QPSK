@@ -15,7 +15,7 @@ extern "C"
 
 #define FS              9600.0
 #define RS              2400.0
-#define NS              8
+
 #define TS              (1.0 / RS)
 #define CYCLES          (int) (FS / RS)
 #define CENTER          1500.0
@@ -32,25 +32,11 @@ extern "C"
 #define TAU             (2.0 * M_PI)
 #define ROTATE45        (M_PI / 4.0)
 
-#define ALPHA		0.010
-#define BETA		(ALPHA * ALPHA)
-
 /*
  * This method is much faster than using cexp()
  */
 #define cmplx(value) (cosf(value) + sinf(value) * I)
 #define cmplxconj(value) (cosf(value) + sinf(value) * -I)
-
-/* Prototypes */
-
-complex float qpsk_mod(int []);
-void qpsk_demod(complex float, int []);
-
-int qpsk_data_modulate(int16_t [], int [], int);
-
-int tx_frame(int16_t [], complex float [], int);
-
-void rx_frame(int16_t [], int []);
 
 #ifdef __cplusplus
 }
