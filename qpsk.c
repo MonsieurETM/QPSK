@@ -21,10 +21,9 @@
 
 // Prototypes
 
-static float cnormf(complex float);
 static float phase_detector(complex float);
 static void qpsk_demod(complex float, int []);
-static void rx_frame(int16_t [], int []);
+static void rx_frame(int16_t []);
 static complex float qpsk_mod(int []);
 static int tx_frame(int16_t [], complex float [], int);
 static complex float qpsk_mod(int []);
@@ -64,16 +63,6 @@ const complex float constellation[] = {
     -1.0f + 0.0f * I // -I
 };
 
-static float cnormf(complex float val) {
-    float realf = crealf(val);
-    float imagf = cimagf(val);
-
-    return realf * realf + imagf * imagf;
-}
-
-/*
- * Let the compiler optimize this
- */
 static float phase_detector(complex float sample) {
     return ((crealf(sample) > 0.0f ? 1.0f : -1.0f) * cimagf(sample) -
             (cimagf(sample) > 0.0f ? 1.0f : -1.0f) * crealf(sample));
@@ -102,7 +91,7 @@ static void qpsk_demod(complex float symbol, int bits[]) {
  *
  * Remove any frequency and timing offsets
  */
-static void rx_frame(int16_t in[], int bits[]) {
+static void rx_frame(int16_t in[]) {
     float max_i = 0.0f;
     float max_q = 0.0f;
 
@@ -121,6 +110,7 @@ static void rx_frame(int16_t in[], int bits[]) {
     int index = 0;
 
     int hist[8] = { 0 };
+    int bits[2];
 
     /*
      * Convert input PCM to complex samples
@@ -220,6 +210,10 @@ static void rx_frame(int16_t in[], int bits[]) {
         advance_loop(d_error);
         phase_wrap();
         frequency_limit();
+        
+        qpsk_demod(costas_frame[i], bits);
+
+        //printf("%d%d ", bits[0], bits[1]);
     }
 
     /*
@@ -362,7 +356,7 @@ int main(int argc, char** argv) {
         if (count != FRAME_SIZE)
             break;
 
-        rx_frame(frame, bits);
+        rx_frame(frame);
     }
     
     fclose(fin);

@@ -15,14 +15,11 @@ extern "C"
 
 #define FS              9600.0
 #define RS              2400.0
+#define CENTER          1500.0
 
 #define TS              (1.0 / RS)
 #define CYCLES          (int) (FS / RS)
-#define CENTER          1500.0
 
-#define DATA_SYMBOLS    32
-
-#define DATA_SAMPLES    (DATA_SYMBOLS * CYCLES * NS)
 #define FRAME_SIZE      512
 
 #ifndef M_PI
