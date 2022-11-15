@@ -14,3 +14,6 @@ Here's the transmit spectrum as viewed in audacity:
 The receive costas loop is not fully debugged, but looks reasonable so far. This display is with a 5 Hz frequency error:
 
 <img src="scatter.png" width="400">  
+
+#### Second Pass
+The development code seems to be working alright, so now the task is to create a functional modem out of it, where various length packets can be sent and received via an Application Program Interface (API).
