@@ -11,6 +11,7 @@ extern "C"
 {
 #endif
 
+#include <stdbool.h>
 #include <complex.h>
 
 void create_costas(float);
@@ -30,6 +31,7 @@ void set_frequency(float);
 void set_phase(float);
 void set_max_freq(float);
 void set_min_freq(float);
+void set_costas_enable(bool);
 
 // Getters
 
@@ -41,6 +43,7 @@ float get_frequency(void);
 float get_phase(void);
 float get_max_freq(void);
 float get_min_freq(void);
+bool get_costas_enable(void);
 
 #ifdef __cplusplus
 }

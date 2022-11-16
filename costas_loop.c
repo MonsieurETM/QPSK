@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#include <stdbool.h>
 #include <complex.h>
 #include <math.h>
 
@@ -22,6 +23,8 @@ static float d_loop_bw;
 static float d_alpha;
 static float d_beta;
 
+static bool d_enable;
+
 /*
  * A Costas loop carrier recovery algorithm.
  *
@@ -39,6 +42,8 @@ void create_control_loop(float loop_bw, float min_freq, float max_freq) {
 
     // Calls update_gains() which sets alpha and beta
     set_loop_bandwidth(loop_bw);
+    
+    set_costas_enable(true);
 }
 
 void update_gains() {
@@ -130,6 +135,8 @@ void set_max_freq(float freq) { d_max_freq = freq; }
 
 void set_min_freq(float freq) { d_min_freq = freq; }
 
+void set_costas_enable(bool val) { d_enable = val; }
+
 // Getters
 
 float get_loop_bandwidth() { return d_loop_bw; }
@@ -147,4 +154,6 @@ float get_phase() { return d_phase; }
 float get_max_freq() { return d_max_freq; }
 
 float get_min_freq() { return d_min_freq; }
+
+bool get_costas_enable() { return d_enable; }
 

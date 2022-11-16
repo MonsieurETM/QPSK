@@ -23,7 +23,7 @@
 
 static float phase_detector(complex float);
 static void qpsk_demod(complex float, int []);
-static void rx_frame(int16_t []);
+static void rx_frame(int16_t [], int []);
 static complex float qpsk_mod(int []);
 static int tx_frame(int16_t [], complex float [], int);
 static complex float qpsk_mod(int []);
@@ -78,10 +78,15 @@ static float phase_detector(complex float sample) {
  * Each bit pair differs from the next by only one bit.
  */
 static void qpsk_demod(complex float symbol, int bits[]) {
-    complex float rotate = symbol * cmplx(ROTATE45);
+    /*
+     * Don't rotate when costas loop enabled
+     */
+    if (get_costas_enable() == false) {
+        symbol *= cmplx(ROTATE45);
+    }
 
-    bits[0] = crealf(rotate) < 0.0f; // I < 0 ?
-    bits[1] = cimagf(rotate) < 0.0f; // Q < 0 ?
+    bits[0] = crealf(symbol) < 0.0f; // I < 0 ?
+    bits[1] = cimagf(symbol) < 0.0f; // Q < 0 ?
 }
 
 /*
@@ -91,7 +96,7 @@ static void qpsk_demod(complex float symbol, int bits[]) {
  *
  * Remove any frequency and timing offsets
  */
-static void rx_frame(int16_t in[]) {
+static void rx_frame(int16_t in[], int bits[]) {
     float max_i = 0.0f;
     float max_q = 0.0f;
 
@@ -110,7 +115,6 @@ static void rx_frame(int16_t in[]) {
     int index = 0;
 
     int hist[8] = { 0 };
-    int bits[2];
 
     /*
      * Convert input PCM to complex samples
@@ -195,25 +199,36 @@ static void rx_frame(int16_t in[]) {
         decimated_frame[extended] = input_frame[(i * CYCLES) + index];	// current frame
     }
 
-    /*
-     * Costas Loop over the decimated frame
-     */
-    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
-       costas_frame[i] = decimated_frame[i] * cmplxconj(get_phase());
+    if (get_costas_enable() == true) {
+        /*
+         * Costas Loop over the decimated frame
+         */
+        for (int i = 0, j = 0; i < (FRAME_SIZE / CYCLES); i++, j += 2) {
+            costas_frame[i] = decimated_frame[i] * cmplxconj(get_phase());
 
 #ifdef TEST_SCATTER
-        fprintf(stderr, "%f %f\n", crealf(costas_frame[i]), cimagf(costas_frame[i]));
+            fprintf(stderr, "%f %f\n", crealf(costas_frame[i]), cimagf(costas_frame[i]));
 #endif
 
-        d_error = phase_detector(costas_frame[i]);
+            d_error = phase_detector(costas_frame[i]);
 
-        advance_loop(d_error);
-        phase_wrap();
-        frequency_limit();
+            advance_loop(d_error);
+            phase_wrap();
+            frequency_limit();
         
-        qpsk_demod(costas_frame[i], bits);
+            qpsk_demod(costas_frame[i], &bits[j]);
 
-        //printf("%d%d ", bits[0], bits[1]);
+            //printf("%d%d ", bits[j], bits[j+1]);
+        }
+    } else {
+        for (int i = 0, j = 0; i < (FRAME_SIZE / CYCLES); i++, j += 2) {
+#ifdef TEST_SCATTER
+            fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
+#endif
+            qpsk_demod(decimated_frame[i], &bits[j]);
+
+            //printf("%d%d ", bits[j], bits[j+1]);
+        }
     }
 
     /*
@@ -262,7 +277,7 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
      * (imaginary part discarded)
      */
     for (int i = 0; i < (length * CYCLES); i++) {
-        samples[i] = (int16_t) (crealf(signal[i]) * 16384.0f); // I at @ .5
+        samples[i] = (int16_t) (crealf(signal[i]) * 2048.0f);// * 16384.0f); // I at @ .5
     }
 
     return (length * CYCLES);
@@ -302,9 +317,11 @@ int main(int argc, char** argv) {
      * All terms are radians per sample.
      *
      * The loop bandwidth determins the lock range
-     * and should be set around 2pi/100 to 2pi/200
+     * and should be set around TAU/100 to TAU/200
      */
     create_control_loop((TAU / 200.0f), -1.6f, 1.6f);
+
+    set_costas_enable(false);
 
     /*
      * Create an RRC filter using the
@@ -319,11 +336,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    //fbb_tx_rect = cmplx(TAU * CENTER / FS);
-    //fbb_offset_freq = CENTER;
+    fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    fbb_offset_freq = CENTER;
 
-    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
-    fbb_offset_freq = (CENTER + 5.0);
+    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
+    //fbb_offset_freq = (CENTER + 5.0);
 
     for (int k = 0; k < 100; k++) {
         // 256 QPSK
@@ -356,7 +373,7 @@ int main(int argc, char** argv) {
         if (count != FRAME_SIZE)
             break;
 
-        rx_frame(frame);
+        rx_frame(frame, bits);
     }
     
     fclose(fin);
