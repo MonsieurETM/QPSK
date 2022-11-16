@@ -277,7 +277,7 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
      * (imaginary part discarded)
      */
     for (int i = 0; i < (length * CYCLES); i++) {
-        samples[i] = (int16_t) (crealf(signal[i]) * 2048.0f);// * 16384.0f); // I at @ .5
+        samples[i] = (int16_t) (crealf(signal[i]) * 16384.0f); // I at @ .5
     }
 
     return (length * CYCLES);
