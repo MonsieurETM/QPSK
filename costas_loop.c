@@ -1,5 +1,8 @@
 /*
  * Copyright 2006,2011,2012,2014 Free Software Foundation, Inc.
+ * Author: Tom Rondeau, 2011
+ *
+ * Converted to C by Steve Sampson
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
