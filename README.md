@@ -1,5 +1,5 @@
 #### QPSK - An Experimental QPSK Packet Data Modem
-This project is to design a modem which does not require a preamble, or a Unique Word (UW) in order to synchronize the timing. There may be a sync word as part of a protocol, but not for timing. I'm interested in making it work for 9600 bit/s QPSK 2400 Baud VHF/UHF and also 2400 bit/s QPSK 1200 Baud, for use on 10 metres HF. 
+This project is to design a modem which does not require a preamble, or a Unique Word (UW) in order to synchronize the timing. There may be a sync word as part of a protocol, but not for timing. I'm interested in making it work for 9600 bit/s QPSK 2400 Baud VHF/UHF and also 2400 bit/s QPSK 1200 Baud, for use on 10 metres HF. This is an alternative to FM modems.
 
 In theory, we don't know where the QPSK time-domain symbols begin. So we average the sample rate amplitudes over a symbol cycle. Then we generate seven (7) histograms based on these sample points. The histogram with the highest count is the winner. At this point we declare the proper index to add during demodulation (after decimation) at the symbol rate (2400 Baud).
 
