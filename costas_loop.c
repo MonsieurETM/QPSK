@@ -49,6 +49,11 @@ void create_control_loop(float loop_bw, float min_freq, float max_freq) {
     set_costas_enable(true);
 }
 
+float phase_detector(complex float sample) {
+    return ((crealf(sample) > 0.0f ? 1.0f : -1.0f) * cimagf(sample) -
+            (cimagf(sample) > 0.0f ? 1.0f : -1.0f) * crealf(sample));
+}
+
 void update_gains() {
     float denom = ((1.0f + (2.0f * d_damping * d_loop_bw)) + (d_loop_bw * d_loop_bw));
 

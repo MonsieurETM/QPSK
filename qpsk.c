@@ -21,7 +21,6 @@
 
 // Prototypes
 
-static float phase_detector(complex float);
 static void qpsk_demod(complex float, int []);
 static void rx_frame(int16_t [], int []);
 static complex float qpsk_mod(int []);
@@ -62,11 +61,6 @@ const complex float constellation[] = {
     0.0f - 1.0f * I, // -Q
     -1.0f + 0.0f * I // -I
 };
-
-static float phase_detector(complex float sample) {
-    return ((crealf(sample) > 0.0f ? 1.0f : -1.0f) * cimagf(sample) -
-            (cimagf(sample) > 0.0f ? 1.0f : -1.0f) * crealf(sample));
-}
 
 /*
  * Gray coded QPSK demodulation function

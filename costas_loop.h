@@ -20,6 +20,7 @@ void update_gains(void);
 void advance_loop(float);
 void phase_wrap(void);
 void frequency_limit(void);
+float phase_detector(complex float);
 
 // Setters
 
