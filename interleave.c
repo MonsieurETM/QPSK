@@ -14,8 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INTERLEAVE	0
-#define DEINTERLEAVE	1
+#include "interleave.h"
 
 static const uint16_t primes[] = {
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
