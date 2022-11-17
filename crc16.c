@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include "crc16.h"
+
 uint16_t crc16(const uint8_t *data, int length) {
     uint8_t x;
     uint16_t crc = 0xFFFF;
