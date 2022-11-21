@@ -17,3 +17,6 @@ This display is with a 5 Hz frequency error and costas loop enabled:
 The development code seems to be working alright, so now the task is to create a functional modem out of it, where various length packets can be sent and received via an Application Programming Interface (API).
 
 I've lined-up a few functions needed: crc16, bit-scramble, and interleave.
+
+#### Bugs
+I tried converting the code for 1200 Baud (2400 bit/s) and it completely failed. My timing algorithm is highly suspect.
