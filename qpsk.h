@@ -11,7 +11,7 @@ extern "C"
 #include <stdint.h>
 #include <math.h> 
 
-#define TX_FILENAME "/tmp/spectrum-filtered.raw"
+#define TX_FILENAME "/tmp/spectrum.raw"
 
 #define FS              9600.0
 #define RS              2400.0

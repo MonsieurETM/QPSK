@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
      */
     create_control_loop((TAU / 200.0f), -1.6f, 1.6f);
 
-    set_costas_enable(false);
+    //set_costas_enable(false);
 
     /*
      * Create an RRC filter using the
@@ -330,11 +330,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0f);
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);
-    fbb_offset_freq = CENTER;
+    //fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    //fbb_offset_freq = CENTER;
 
-    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
-    //fbb_offset_freq = (CENTER + 5.0);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
+    fbb_offset_freq = (CENTER + 5.0);
 
     for (int k = 0; k < 100; k++) {
         // 256 QPSK
