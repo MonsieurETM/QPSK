@@ -17,7 +17,6 @@ extern "C"
 #define RS              2400.0
 #define CENTER          1500.0
 
-#define TS              (1.0 / RS)
 #define CYCLES          (int) (FS / RS)
 
 #define FRAME_SIZE      512
