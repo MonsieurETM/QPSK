@@ -19,4 +19,4 @@ The development code seems to be working alright, so now the task is to create a
 I've lined-up a few functions needed: crc16, bit-scramble, and interleave.
 
 #### Bugs
-I tried converting the code for 1200 Baud (2400 bit/s) and it completely failed. My timing algorithm is highly suspect.
+I tried converting the code for 1200 Baud (2400 bit/s) with a 9600 bit/s sample rate, it completely failed. By reducing to 4800 nit/s sample rate, the constellation looked better, but still wasn't perfect. This leads me to believe my upsampling using zero padding needs to be improved.
