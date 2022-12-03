@@ -7,6 +7,8 @@ Note: This part is not working at 1200 Baud but worked at 2400 Baud. TODO
 
 There also needs to be a frequency error adjustment. Not so much for fixed radio sites, as they don't move, but when mobile, of course, will have a varying Doppler shift to be corrected. I ported the GNU Radio Costas loop C++ code to C and merged that with the receiver code. I also made the costas loop optional, so you can turn it off. This might be acceptable for fixed radio sites.
 
+To compile and make the ```qpsk``` binary, just type ```make``` or if you want to see the scatter diagram graphic ```make test_scatter```
+
 Here's the 1200 Baud transmit spectrum (random bits) with 9600 sample rate as viewed in audacity:
 
 <img src="spectrum.png" width="400">  
