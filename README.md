@@ -16,3 +16,7 @@ Here's the 1200 Baud transmit spectrum (random bits) with 9600 sample rate as vi
 This display is with a 50 Hz frequency error and costas loop enabled:
 
 <img src="scatter.png" width="400">  
+
+This display is with a 50 Hz frequency error and costas loop disabled:  
+
+<img src="scatter-50.png" width="400">   
