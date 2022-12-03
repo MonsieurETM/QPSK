@@ -1,7 +1,9 @@
 /*
  * qpsk.c
  *
- * Testing program for qpsk modem algorithms, November 2022
+ * Testing program for qpsk modem algorithms, December 2022
+ *
+ * Designed for 1200 Baud on 10 meters, 2400 bit/s
  */
 
 // Includes
@@ -37,7 +39,7 @@ complex float tx_filter[NTAPS];
 complex float rx_filter[NTAPS];
 
 complex float input_frame[FRAME_SIZE];
-complex float decimated_frame[FRAME_SIZE / 2];
+complex float decimated_frame[FRAME_SIZE / 4];
 complex float costas_frame[FRAME_SIZE / CYCLES];
 
 // Two phase for full duplex
@@ -86,17 +88,11 @@ static void qpsk_demod(complex float symbol, int bits[]) {
 /*
  * Receive function
  * 
- * 2400 baud QPSK at 9600 samples/sec.
+ * 1200 baud QPSK at 9600 sample rate
  *
  * Remove any frequency and timing offsets
  */
 static void rx_frame(int16_t in[], int bits[]) {
-    float max_i = 0.0f;
-    float max_q = 0.0f;
-
-    float av_i = 0.0f;;
-    float av_q = 0.0f;
-
     /*
      * You need as many histograms as you think
      * you'll need for timing offset. Using 8 for now.
@@ -104,32 +100,33 @@ static void rx_frame(int16_t in[], int bits[]) {
      */
     int hist_i[8] = { 0 };
     int hist_q[8] = { 0 };
-    
-    int hmax = 0;
-    int index = 0;
-
     int hist[8] = { 0 };
 
     /*
-     * Convert input PCM to complex samples
-     * at 9600 Hz sample rate
+     * Convert input PCM to complex samples at 9600 sample rate
+     * by translating from 1500 Hz center frequency to baseband.
      */
     for (int i = 0; i < FRAME_SIZE; i++) {
         fbb_rx_phase *= fbb_rx_rect;
 
-        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);
+        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);	// +/- .5 or so
     }
 
     fbb_rx_phase /= cabsf(fbb_rx_phase); // normalize as magnitude can drift
 
     /*
-     * Raised Root Cosine Filter
+     * Raised Root Cosine Baseband Filter
      */
-    rrc_fir(rx_filter, input_frame, FRAME_SIZE);
+    rrc_fir(rx_filter, input_frame, FRAME_SIZE);	// 1200 Baud, 9600 sample rate
+
+    float max_i = 0.0f;
+    float max_q = 0.0f;
+
+    float av_i = 0.0f;
+    float av_q = 0.0f;
 
     /*
      * Find maximum absolute I/Q value for one symbol length
-     * after passing through the filter
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         for (int j = 0; j < CYCLES; j++) {
@@ -169,11 +166,14 @@ static void rx_frame(int16_t in[], int bits[]) {
         }
     }
 
+    int hmax = 0;
+    int index = 0;
+
     /*
      * Sum the I/Q histograms
-     * and ind the maximum value
+     * and index the maximum value
      */
-    for (int i = 0; i < 8; i++) {            
+    for (int i = 1; i < 8; i++) {            
         hist[i] = (hist_i[i] + hist_q[i]);
 
         if (hist[i] > hmax) {
@@ -183,14 +183,28 @@ static void rx_frame(int16_t in[], int bits[]) {
     }
 
     /*
-     * Decimate by 4 to the 2400 symbol rate
-     * adjust for the timing error using index
+     * Decimate by CYCLES, at this point we have the 1200 Baud QPSK signal.
+     *
+     * Adjust for the timing error using index
      */
-    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
-        int extended = (FRAME_SIZE / CYCLES) + i; // compute once
+    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {			// 512 / 8 = 64
+        int extended = (FRAME_SIZE / CYCLES) + i;			// compute once
         
         decimated_frame[i] = decimated_frame[extended];			// use previous frame
+#ifdef BUGGY
         decimated_frame[extended] = input_frame[(i * CYCLES) + index];	// current frame
+#endif
+
+/*=======================================
+  =======================================
+
+TODO - Bug, my offset index finder doesn't seem to work
+As you can tell, if you put in 6 it is accurate
+
+  ==================================================
+  ================================================*/
+
+        decimated_frame[extended] = input_frame[(i * CYCLES) + 6];
     }
 
     if (get_costas_enable() == true) {
@@ -232,34 +246,40 @@ static void rx_frame(int16_t in[], int bits[]) {
 }
 
 /*
- * Modulate the symbols by first upsampling to 9600 Hz sample rate,
- * and translating the spectrum to 1500 Hz, where it is filtered
- * using the root raised cosine coefficients.
+ * Modulate the 1200 sym/s. First re-sample at 9600 samples/s inserting zero's,
+ * then post filtered using the root raised cosine FIR, then translated to
+ * 1500 Hz center frequency.
  */
 static int tx_frame(int16_t samples[], complex float symbol[], int length) {
-    complex float signal[(length * CYCLES)];
+    int n = (length * CYCLES);
+    complex float signal[n];	// big enough for 8x sample rate
 
     /*
-     * Build the 2400 baud packet Frame zero padding
-     * for the desired 9600 Hz sample rate.
+     * Build the 1200 sym/s packet Frame by zero padding
+     * for the desired (8x nyquist) 9600 sample rate.
+     *
+     * signal[] array length is now 8x longer.
      */
     for (int i = 0; i < length; i++) {
-        signal[(i * CYCLES)] = symbol[i];
+        int index = (i * CYCLES);	// compute once
+
+        signal[index] = symbol[i];
 
         for (int j = 1; j < CYCLES; j++) {
-            signal[(i * CYCLES) + j] = 0.0f;
+            signal[index + j] = 0.0f;
         }
     }
 
     /*
-     * Raised Root Cosine Filter
+     * Raised Root Cosine Filter at Baseband and 9600 samples/s.
+     * This optimizes digital data signals
      */
-    rrc_fir(tx_filter, signal, (length * CYCLES));
+    rrc_fir(tx_filter, signal, n);
 
     /*
-     * Shift Baseband to Center Frequency
+     * Shift Baseband to 1500 Hz Center Frequency
      */
-    for (int i = 0; i < (length * CYCLES); i++) {
+    for (int i = 0; i < n; i++) {
         fbb_tx_phase *= fbb_tx_rect;
         signal[i] *= fbb_tx_phase;
     }
@@ -268,13 +288,13 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
 
     /*
      * Now return the resulting real samples
-     * (imaginary part discarded)
+     * (imaginary part discarded for radio transmit)
      */
-    for (int i = 0; i < (length * CYCLES); i++) {
+    for (int i = 0; i < n; i++) {
         samples[i] = (int16_t) (crealf(signal[i]) * 16384.0f); // I at @ .5
     }
 
-    return (length * CYCLES);
+    return n;
 }
 
 /*
@@ -295,7 +315,7 @@ static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length) {
         symbol[i] = qpsk_mod(dibit);
     }
 
-    return tx_frame(samples, symbol, length);
+    return tx_frame(samples, symbol, length/2);
 }
 
 // Main Program
@@ -333,8 +353,8 @@ int main(int argc, char** argv) {
     //fbb_tx_rect = cmplx(TAU * CENTER / FS);
     //fbb_offset_freq = CENTER;
 
-    fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
-    fbb_offset_freq = (CENTER + 5.0);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);	// 50 Hz Frequency Error
+    fbb_offset_freq = (CENTER + 50.0);
 
     for (int k = 0; k < 100; k++) {
         // 256 QPSK
@@ -343,7 +363,7 @@ int main(int argc, char** argv) {
             bits[i + 1] = rand() % 2;
         }
 
-        length = qpsk_packet_mod(frame, bits, (FRAME_SIZE / 2));
+        length = qpsk_packet_mod(frame, bits, FRAME_SIZE);
 
         fwrite(frame, sizeof (int16_t), length, fout);
     }

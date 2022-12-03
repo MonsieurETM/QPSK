@@ -17,7 +17,7 @@ extern "C" {
 #define TAU           (2.0 * M_PI)
 
 #define NTAPS         127	// lower bauds need more taps, 127 for 300 baud is good
-#define GAIN          1.7
+#define GAIN          2.2
 
 void rrc_fir(complex float [], complex float [], int);
 void rrc_make(float, float, float);

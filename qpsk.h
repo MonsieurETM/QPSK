@@ -14,7 +14,7 @@ extern "C"
 #define TX_FILENAME "/tmp/spectrum.raw"
 
 #define FS              9600.0
-#define RS              2400.0
+#define RS              1200.0
 #define CENTER          1500.0
 
 #define CYCLES          (int) (FS / RS)
@@ -33,6 +33,7 @@ extern "C"
  */
 #define cmplx(value) (cosf(value) + sinf(value) * I)
 #define cmplxconj(value) (cosf(value) + sinf(value) * -I)
+#define array_length(a) (sizeof(a)/sizeof((a)[0]))
 
 #ifdef __cplusplus
 }

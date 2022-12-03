@@ -32,7 +32,7 @@ void rrc_make(float fs, float rs, float alpha) {
     float num, den;
     float spb = fs / rs; // samples per bit/symbol
     
-    float scale = 0.f;
+    float scale = 0.0f;
     
     for (int i = 0; i < NTAPS; i++) {
         float xindx = i - NTAPS / 2;
