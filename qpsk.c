@@ -333,7 +333,7 @@ int main(int argc, char** argv) {
      * The loop bandwidth determins the lock range
      * and should be set around TAU/100 to TAU/200
      */
-    create_control_loop((TAU / 200.0f), -1.6f, 1.6f);
+    create_control_loop((TAU / 100.0f), -1.6f, 1.6f);
 
     //set_costas_enable(false);
 
