@@ -14,12 +14,16 @@ extern "C"
 #define TX_FILENAME "/tmp/spectrum.raw"
 
 #define FS              9600.0
-#define RS              1200.0
+#define RS              2400.0
 #define CENTER          1500.0
 
 #define CYCLES          (int) (FS / RS)
 
 #define FRAME_SIZE      512
+
+#define OS_48           6                   // oversampling rate
+#define OS_TAPS_48K     48                  // number of OS filter taps at 48 kHz
+#define OS_TAPS_48_8K   (OS_TAPS_48K/OS_48) // number of OS filter taps at 8 kHz
 
 #ifndef M_PI
 #define M_PI            3.14159265358979323846

@@ -39,7 +39,7 @@ complex float tx_filter[NTAPS];
 complex float rx_filter[NTAPS];
 
 complex float input_frame[FRAME_SIZE];
-complex float decimated_frame[FRAME_SIZE / 4];
+complex float decimated_frame[FRAME_SIZE / 2];
 complex float costas_frame[FRAME_SIZE / CYCLES];
 
 // Two phase for full duplex
@@ -54,6 +54,63 @@ float fbb_offset_freq;
 
 float d_error;
 
+#ifdef FUTURE
+/*
+ * Resampler for 8 kHz to 48 kHz
+ * Generate using fir1(47,1/6) in Octave
+ */
+static const float filter48[] = {
+    -3.55606818e-04,
+    -8.98615286e-04,
+    -1.40119781e-03,
+    -1.71713852e-03,
+    -1.56471179e-03,
+    -6.28128960e-04,
+    1.24522223e-03,
+    3.83138676e-03,
+    6.41309478e-03,
+    7.85893186e-03,
+    6.93514929e-03,
+    2.79361991e-03,
+    -4.51051400e-03,
+    -1.36671853e-02,
+    -2.21034939e-02,
+    -2.64084653e-02,
+    -2.31425052e-02,
+    -9.84218694e-03,
+    1.40648474e-02,
+    4.67316298e-02,
+    8.39615986e-02,
+    1.19925275e-01,
+    1.48381174e-01,
+    1.64097819e-01,
+    1.64097819e-01,
+    1.48381174e-01,
+    1.19925275e-01,
+    8.39615986e-02,
+    4.67316298e-02,
+    1.40648474e-02,
+    -9.84218694e-03,
+    -2.31425052e-02,
+    -2.64084653e-02,
+    -2.21034939e-02,
+    -1.36671853e-02,
+    -4.51051400e-03,
+    2.79361991e-03,
+    6.93514929e-03,
+    7.85893186e-03,
+    6.41309478e-03,
+    3.83138676e-03,
+    1.24522223e-03,
+    -6.28128960e-04,
+    -1.56471179e-03,
+    -1.71713852e-03,
+    -1.40119781e-03,
+    -8.98615286e-04,
+    -3.55606818e-04
+};
+#endif
+
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
  */
@@ -63,6 +120,58 @@ const complex float constellation[] = {
     0.0f - 1.0f * I, // -Q
     -1.0f + 0.0f * I // -I
 };
+
+#ifdef FUTURE
+
+// Think about using 8 kHz rate versus 9600
+
+/*
+ * Changes the sample rate of a signal from 8 kHz to 48 kHz.
+ *
+ * n is the number of samples at the 8 kHz rate, there are OS_48 * n samples
+ * at the 48 kHz rate.  A memory of OS_TAPS_48/OS_48 samples is reqd for in8k[]
+ */
+void resample_8_to_48(float out48k[], float in8k[], int n)
+{
+    for (int i = 0; i < n; i++) {
+	for (int j = 0; j < OS_48; j++) {
+	    out48k[i * OS_48 + j] = 0.0f;
+	    
+	    for (int k = 0, l = 0; k < OS_TAPS_48K; k += OS_48, l++)
+		out48k[i * OS_48 + j] += filter48[k + j] * in8k[i - l];
+	    
+	    out48k[i * OS_48 + j] *= OS_48;
+	}
+    }	
+
+    /* update filter memory */
+
+    for (int i = -OS_TAPS_48_8K; i < 0; i++)
+	in8k[i] = in8k[i + n];
+}
+
+/*
+ * Changes the sample rate of a signal from 48 to 8 kHz.
+ *
+ * n is the number of samples at the 8 kHz rate, there are OS_48 * n
+ * samples at the 48 kHz rate.  As above however a memory of
+ * OS_TAPS_48 samples is reqd for in48k[]
+ */
+void resample_48_to_8(float out8k[], float in48k[], int n)
+{
+    for (int i = 0; i < n; i++) {
+	out8k[i] = 0.0f;
+
+	for (int j = 0; j < OS_TAPS_48K; j++)
+	    out8k[i] += filter48[j] * in48k[i * OS_48 - j];
+    }
+
+    /* update filter memory */
+
+    for (int i = -OS_TAPS_48K; i < 0; i++)
+	in48k[i] = in48k[i + n * OS_48];
+}
+#endif
 
 /*
  * Gray coded QPSK demodulation function
@@ -88,11 +197,20 @@ static void qpsk_demod(complex float symbol, int bits[]) {
 /*
  * Receive function
  * 
- * 1200 baud QPSK at 9600 sample rate
+ * 2400 baud QPSK at 9600 samples/sec.
  *
  * Remove any frequency and timing offsets
+ *
+ * NOTE: This whole histogram algorith is highly suspect
+ *       It doesn't work with different symbol rates.
  */
 static void rx_frame(int16_t in[], int bits[]) {
+    float max_i = 0.0f;
+    float max_q = 0.0f;
+
+    float av_i = 0.0f;;
+    float av_q = 0.0f;
+
     /*
      * You need as many histograms as you think
      * you'll need for timing offset. Using 8 for now.
@@ -100,33 +218,32 @@ static void rx_frame(int16_t in[], int bits[]) {
      */
     int hist_i[8] = { 0 };
     int hist_q[8] = { 0 };
+    
+    int hmax = 0;
+    int index = 0;
+
     int hist[8] = { 0 };
 
     /*
-     * Convert input PCM to complex samples at 9600 sample rate
-     * by translating from 1500 Hz center frequency to baseband.
+     * Convert input PCM to complex samples
+     * at 9600 Hz sample rate
      */
     for (int i = 0; i < FRAME_SIZE; i++) {
         fbb_rx_phase *= fbb_rx_rect;
 
-        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);	// +/- .5 or so
+        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);
     }
 
     fbb_rx_phase /= cabsf(fbb_rx_phase); // normalize as magnitude can drift
 
     /*
-     * Raised Root Cosine Baseband Filter
+     * Raised Root Cosine Filter
      */
-    rrc_fir(rx_filter, input_frame, FRAME_SIZE);	// 1200 Baud, 9600 sample rate
-
-    float max_i = 0.0f;
-    float max_q = 0.0f;
-
-    float av_i = 0.0f;
-    float av_q = 0.0f;
+    rrc_fir(rx_filter, input_frame, FRAME_SIZE);
 
     /*
      * Find maximum absolute I/Q value for one symbol length
+     * after passing through the filter
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         for (int j = 0; j < CYCLES; j++) {
@@ -166,14 +283,11 @@ static void rx_frame(int16_t in[], int bits[]) {
         }
     }
 
-    int hmax = 0;
-    int index = 0;
-
     /*
      * Sum the I/Q histograms
-     * and index the maximum value
+     * and ind the maximum value
      */
-    for (int i = 1; i < 8; i++) {            
+    for (int i = 0; i < 8; i++) {            
         hist[i] = (hist_i[i] + hist_q[i]);
 
         if (hist[i] > hmax) {
@@ -183,28 +297,14 @@ static void rx_frame(int16_t in[], int bits[]) {
     }
 
     /*
-     * Decimate by CYCLES, at this point we have the 1200 Baud QPSK signal.
-     *
-     * Adjust for the timing error using index
+     * Decimate by 4 to the 2400 symbol rate
+     * adjust for the timing error using index
      */
-    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {			// 512 / 8 = 64
-        int extended = (FRAME_SIZE / CYCLES) + i;			// compute once
+    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
+        int extended = (FRAME_SIZE / CYCLES) + i; // compute once
         
         decimated_frame[i] = decimated_frame[extended];			// use previous frame
-#ifdef BUGGY
         decimated_frame[extended] = input_frame[(i * CYCLES) + index];	// current frame
-#endif
-
-/*=======================================
-  =======================================
-
-TODO - Bug, my offset index finder doesn't seem to work
-As you can tell, if you put in 6 it is accurate
-
-  ==================================================
-  ================================================*/
-
-        decimated_frame[extended] = input_frame[(i * CYCLES) + 6];
     }
 
     if (get_costas_enable() == true) {
@@ -246,19 +346,19 @@ As you can tell, if you put in 6 it is accurate
 }
 
 /*
- * Modulate the 1200 sym/s. First re-sample at 9600 samples/s inserting zero's,
+ * Modulate the 2400 sym/s. First re-sample at 9600 samples/s inserting zero's,
  * then post filtered using the root raised cosine FIR, then translated to
  * 1500 Hz center frequency.
  */
 static int tx_frame(int16_t samples[], complex float symbol[], int length) {
     int n = (length * CYCLES);
-    complex float signal[n];	// big enough for 8x sample rate
+    complex float signal[n];	// big enough for 4x sample rate
 
     /*
-     * Build the 1200 sym/s packet Frame by zero padding
-     * for the desired (8x nyquist) 9600 sample rate.
+     * Build the 2400 sym/s packet Frame by zero padding
+     * for the desired (4x nyquist) 9600 sample rate.
      *
-     * signal[] array length is now 8x longer.
+     * signal[] array length is now 4x longer.
      */
     for (int i = 0; i < length; i++) {
         int index = (i * CYCLES);	// compute once
@@ -277,7 +377,7 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
     rrc_fir(tx_filter, signal, n);
 
     /*
-     * Shift Baseband to 1500 Hz Center Frequency
+     * Shift Baseband to Center Frequency
      */
     for (int i = 0; i < n; i++) {
         fbb_tx_phase *= fbb_tx_rect;
@@ -315,8 +415,9 @@ static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length) {
         symbol[i] = qpsk_mod(dibit);
     }
 
-    return tx_frame(samples, symbol, length/2);
+    return tx_frame(samples, symbol, length);
 }
+
 
 // Main Program
 
@@ -333,7 +434,7 @@ int main(int argc, char** argv) {
      * The loop bandwidth determins the lock range
      * and should be set around TAU/100 to TAU/200
      */
-    create_control_loop((TAU / 100.0f), -1.6f, 1.6f);
+    create_control_loop((TAU / 200.0f), -1.6f, 1.6f);
 
     //set_costas_enable(false);
 
@@ -363,7 +464,8 @@ int main(int argc, char** argv) {
             bits[i + 1] = rand() % 2;
         }
 
-        length = qpsk_packet_mod(frame, bits, FRAME_SIZE);
+        // Send 256 dibits
+        length = qpsk_packet_mod(frame, bits, (FRAME_SIZE / 2));
 
         fwrite(frame, sizeof (int16_t), length, fout);
     }
@@ -394,3 +496,4 @@ int main(int argc, char** argv) {
 
     return (EXIT_SUCCESS);
 }
+
