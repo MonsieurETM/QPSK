@@ -3,7 +3,7 @@
  *
  * Testing program for qpsk modem algorithms, December 2022
  *
- * Designed for 1200 Baud on 10 meters, 2400 bit/s
+ * Designed for 2400 Baud, 4800 bit/s
  */
 
 // Includes
