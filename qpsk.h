@@ -35,8 +35,8 @@ extern "C"
 /*
  * This method is much faster than using cexp()
  */
-#define cmplx(value) (cosf(value) + sinf(value) * I)
-#define cmplxconj(value) (cosf(value) + sinf(value) * -I)
+#define cmplx(value) (cos(value) + sin(value) * I)
+#define cmplxconj(value) (cos(value) + sin(value) * -I)
 #define array_length(a) (sizeof(a)/sizeof((a)[0]))
 
 #ifdef __cplusplus

@@ -220,7 +220,7 @@ static void earlyLateGate(int numSymb, int N, int buffLen, double g, double tau[
          */
         complex double ahat = a1 * (a2 - a3);
         
-        double eK = crealf(ahat) + cimagf(ahat);       /* error */
+        double eK = creal(ahat) + cimag(ahat);       /* error */
 
         tau[k+2] = tau[k+1] + (g * eK); /* Apply current estimate to next */
 
@@ -293,8 +293,8 @@ static void rx_frame(int16_t in[], int bits[]) {
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         for (int j = 0; j < CYCLES; j++) {
-            av_i += fabsf(crealf(input_frame[i+j]));
-            av_q += fabsf(cimagf(input_frame[i+j]));
+            av_i += fabsf(creal(input_frame[i+j]));
+            av_q += fabsf(cimag(input_frame[i+j]));
         }
         
         av_i /= CYCLES;
@@ -361,7 +361,7 @@ static void rx_frame(int16_t in[], int bits[]) {
             costas_frame[i] = decimated_frame[i] * cmplxconj(get_phase());
 
 #ifdef TEST_SCATTER
-            fprintf(stderr, "%f %f\n", crealf(costas_frame[i]), cimagf(costas_frame[i]));
+            fprintf(stderr, "%f %f\n", creal(costas_frame[i]), cimag(costas_frame[i]));
 #endif
 
             d_error = phase_detector(costas_frame[i]);
@@ -377,7 +377,7 @@ static void rx_frame(int16_t in[], int bits[]) {
     } else {
         for (int i = 0, j = 0; i < (FRAME_SIZE / CYCLES); i++, j += 2) {
 #ifdef TEST_SCATTER
-            fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
+            fprintf(stderr, "%f %f\n", creal(decimated_frame[i]), cimag(decimated_frame[i]));
 #endif
             psk_demod(decimated_frame[i], &bits[j]);
 
@@ -438,7 +438,7 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length) {
      * (imaginary part discarded for radio transmit)
      */
     for (int i = 0; i < n; i++) {
-        samples[i] = (int16_t) (crealf(signal[i]) * 16384.0f); // I at @ .5
+        samples[i] = (int16_t) (creal(signal[i]) * 16384.0f); // I at @ .5
     }
 
     return n;
@@ -460,7 +460,7 @@ int main(int argc, char** argv) {
      * The loop bandwidth determins the lock range
      * and should be set around TAU/100 to TAU/200
      */
-    create_control_loop((TAU / 200.0f), -1.6f, 1.6f);
+    create_control_loop((TAU / 200.), -1., 1.);
 
     //set_costas_enable(false);
 
@@ -468,7 +468,7 @@ int main(int argc, char** argv) {
      * Create an RRC filter using the
      * Sample Rate, baud, and Alpha
      */
-    rrc_make(FS, RS, .35f);
+    rrc_make(FS, RS, .35);
 
     /*
      * Create QPSK functions
@@ -482,12 +482,12 @@ int main(int argc, char** argv) {
      */
     fout = fopen(TX_FILENAME, "wb");
 
-    fbb_tx_phase = cmplx(0.0f);
+    fbb_tx_phase = cmplx(0.);
     //fbb_tx_rect = cmplx(TAU * CENTER / FS);
     //fbb_offset_freq = CENTER;
 
-    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);	// 50 Hz Frequency Error
-    fbb_offset_freq = (CENTER + 50.0);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 50.) / FS);	// 50 Hz Frequency Error
+    fbb_offset_freq = (CENTER + 50.);
 
     for (int k = 0; k < 100; k++) {
 
@@ -512,7 +512,7 @@ int main(int argc, char** argv) {
      */
     fin = fopen(TX_FILENAME, "rb");
 
-    fbb_rx_phase = cmplx(0.0f);
+    fbb_rx_phase = cmplx(0.);
     fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
 
     while (1) {
