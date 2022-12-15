@@ -28,7 +28,7 @@
 
 char *copyright_psk = "psk: Copyright (C) 2022 Fadi Jerji";
 
-static void set_constellation(complex double *, int);
+static void set_constellation(complex double *, Mod_type);
 static double cnorm(complex double);
 
 static complex double *constellation;
@@ -47,143 +47,142 @@ void destroy_psk() {
         free(constellation);
 }
 
-void set_predefined_constellation(int M)
+void set_predefined_constellation(Mod_type M)
 {
 	constellation = calloc(M, sizeof (complex double));
 
-	if(M==MOD_BPSK)	{
-		constellation[0] = CMPLX(1 , 0 );
-		constellation[1] = CMPLX(-1 , 0 );
-	} else if(M==MOD_QPSK)	{
-		constellation[0] = CMPLX(-1,1);
-		constellation[1] = CMPLX(-1,-1);
-		constellation[2] = CMPLX(1,1);
-		constellation[3] = CMPLX(1,-1);
-
-	} else if(M==MOD_8QAM)	{
-		constellation[0] = CMPLX(-3,1);
-		constellation[1] = CMPLX(-3,-1);
-		constellation[2] = CMPLX(-1,1);
-		constellation[3] = CMPLX(-1,-1);
-		constellation[4] = CMPLX(3,1);
-		constellation[5] = CMPLX(3,-1);
-		constellation[6] = CMPLX(1,1);
-		constellation[7] = CMPLX(1,-1);
-	} else if(M==MOD_16QAM)	{
-		constellation[0] = CMPLX(-3,3);
-		constellation[1] = CMPLX(-3,1);
-		constellation[2] = CMPLX(-3,-3);
-		constellation[3] = CMPLX(-3,-1);
-		constellation[4] = CMPLX(-1,3);
-		constellation[5] = CMPLX(-1,1);
-		constellation[6] = CMPLX(-1,-3);
-		constellation[7] = CMPLX(-1,-1);
-		constellation[8] = CMPLX(3,3);
-		constellation[9] = CMPLX(3,1);
-		constellation[10] = CMPLX(3,-3);
-		constellation[11] = CMPLX(3,-1);
-		constellation[12] = CMPLX(1,3);
-		constellation[13] = CMPLX(1,1);
-		constellation[14] = CMPLX(1,-3);
-		constellation[15] = CMPLX(1,-1);
-	} else if(M==MOD_32QAM)	{
-		constellation[0] = CMPLX(-3,5);
-		constellation[1] = CMPLX(-1,5);
-		constellation[2] = CMPLX(-3,-5);
-		constellation[3] = CMPLX(-1,-5);
-		constellation[4] = CMPLX(-5,3);
-		constellation[5] = CMPLX(-5,1);
-		constellation[6] = CMPLX(-5,-3);
-		constellation[7] = CMPLX(-5,-1);
-		constellation[8] = CMPLX(-1,3);
-		constellation[9] = CMPLX(-1,1);
-		constellation[10] = CMPLX(-1,-3);
-		constellation[11] = CMPLX(-1,-1);
-		constellation[12] = CMPLX(-3,3);
-		constellation[13] = CMPLX(-3,1);
-		constellation[14] = CMPLX(-3,-3);
-		constellation[15] = CMPLX(-3,-1);
-		constellation[16] = CMPLX(3,5);
-		constellation[17] = CMPLX(1,5);
-		constellation[18] = CMPLX(3,-5);
-		constellation[19] = CMPLX(1,-5);
-		constellation[20] = CMPLX(5,3);
-		constellation[21] = CMPLX(5,1);
-		constellation[22] = CMPLX(5,-3);
-		constellation[23] = CMPLX(5,-1);
-		constellation[24] = CMPLX(1,3);
-		constellation[25] = CMPLX(1,1);
-		constellation[26] = CMPLX(1,-3);
-		constellation[27] = CMPLX(1,-1);
-		constellation[28] = CMPLX(3,3);
-		constellation[29] = CMPLX(3,1);
-		constellation[30] = CMPLX(3,-3);
-		constellation[31] = CMPLX(3,-1);
-	} else if(M==MOD_64QAM)	{
-		constellation[0] = CMPLX(-7,7);
-		constellation[1] = CMPLX(-7,5);
-		constellation[2] = CMPLX(-7,1);
-		constellation[3] = CMPLX(-7,3);
-		constellation[4] = CMPLX(-7,-7);
-		constellation[5] = CMPLX(-7,-5);
-		constellation[6] = CMPLX(-7,-1);
-		constellation[7] = CMPLX(-7,-3);
-		constellation[8] = CMPLX(-5,7);
-		constellation[9] = CMPLX(-5,5);
-		constellation[10] = CMPLX(-5,1);
-		constellation[11] = CMPLX(-5,3);
-		constellation[12] = CMPLX(-5,-7);
-		constellation[13] = CMPLX(-5,-5);
-		constellation[14] = CMPLX(-5,-1);
-		constellation[15] = CMPLX(-5,-3);
-		constellation[16] = CMPLX(-1,7);
-		constellation[17] = CMPLX(-1,5);
-		constellation[18] = CMPLX(-1,1);
-		constellation[19] = CMPLX(-1,3);
-		constellation[20] = CMPLX(-1,-7);
-		constellation[21] = CMPLX(-1,-5);
-		constellation[22] = CMPLX(-1,-1);
-		constellation[23] = CMPLX(-1,-3);
-		constellation[24] = CMPLX(-3,7);
-		constellation[25] = CMPLX(-3,5);
-		constellation[26] = CMPLX(-3,1);
-		constellation[27] = CMPLX(-3,3);
-		constellation[28] = CMPLX(-3,-7);
-		constellation[29] = CMPLX(-3,-5);
-		constellation[30] = CMPLX(-3,-1);
-		constellation[31] = CMPLX(-3,-3);
-		constellation[32] = CMPLX(7,7);
-		constellation[33] = CMPLX(7,5);
-		constellation[34] = CMPLX(7,1);
-		constellation[35] = CMPLX(7,3);
-		constellation[36] = CMPLX(7,-7);
-		constellation[37] = CMPLX(7,-5);
-		constellation[38] = CMPLX(7,-1);
-		constellation[39] = CMPLX(7,-3);
-		constellation[40] = CMPLX(5,7);
-		constellation[41] = CMPLX(5,5);
-		constellation[42] = CMPLX(5,1);
-		constellation[43] = CMPLX(5,3);
-		constellation[44] = CMPLX(5,-7);
-		constellation[45] = CMPLX(5,-5);
-		constellation[46] = CMPLX(5,-1);
-		constellation[47] = CMPLX(5,-3);
-		constellation[48] = CMPLX(1,7);
-		constellation[49] = CMPLX(1,5);
-		constellation[50] = CMPLX(1,1);
-		constellation[51] = CMPLX(1,3);
-		constellation[52] = CMPLX(1,-7);
-		constellation[53] = CMPLX(1,-5);
-		constellation[54] = CMPLX(1,-1);
-		constellation[55] = CMPLX(1,-3);
-		constellation[56] = CMPLX(3,7);
-		constellation[57] = CMPLX(3,5);
-		constellation[58] = CMPLX(3,1);
-		constellation[59] = CMPLX(3,3);
-		constellation[60] = CMPLX(3,-7);
-		constellation[61] = CMPLX(3,-5);
-		constellation[62] = CMPLX(3,-1);
-		constellation[63] = CMPLX(3,-3);
+	if (M == MOD_BPSK) {
+		constellation[0] = CMPLX(1, 0);
+		constellation[1] = CMPLX(-1, 0);
+	} else if (M == MOD_QPSK) {
+		constellation[0] = CMPLX(-1, 1);
+		constellation[1] = CMPLX(-1, -1);
+		constellation[2] = CMPLX(1, 1);
+		constellation[3] = CMPLX(1, -1);
+	} else if (M == MOD_8QAM) {
+		constellation[0] = CMPLX(-3, 1);
+		constellation[1] = CMPLX(-3, -1);
+		constellation[2] = CMPLX(-1, 1);
+		constellation[3] = CMPLX(-1, -1);
+		constellation[4] = CMPLX(3, 1);
+		constellation[5] = CMPLX(3, -1);
+		constellation[6] = CMPLX(1, 1);
+		constellation[7] = CMPLX(1, -1);
+	} else if (M == MOD_16QAM) {
+		constellation[0] = CMPLX(-3, 3);
+		constellation[1] = CMPLX(-3, 1);
+		constellation[2] = CMPLX(-3, -3);
+		constellation[3] = CMPLX(-3, -1);
+		constellation[4] = CMPLX(-1, 3);
+		constellation[5] = CMPLX(-1, 1);
+		constellation[6] = CMPLX(-1, -3);
+		constellation[7] = CMPLX(-1, -1);
+		constellation[8] = CMPLX(3, 3);
+		constellation[9] = CMPLX(3, 1);
+		constellation[10] = CMPLX(3, -3);
+		constellation[11] = CMPLX(3, -1);
+		constellation[12] = CMPLX(1, 3);
+		constellation[13] = CMPLX(1, 1);
+		constellation[14] = CMPLX(1, -3);
+		constellation[15] = CMPLX(1, -1);
+	} else if (M == MOD_32QAM) {
+		constellation[0] = CMPLX(-3, 5);
+		constellation[1] = CMPLX(-1, 5);
+		constellation[2] = CMPLX(-3, -5);
+		constellation[3] = CMPLX(-1, -5);
+		constellation[4] = CMPLX(-5, 3);
+		constellation[5] = CMPLX(-5, 1);
+		constellation[6] = CMPLX(-5, -3);
+		constellation[7] = CMPLX(-5, -1);
+		constellation[8] = CMPLX(-1, 3);
+		constellation[9] = CMPLX(-1, 1);
+		constellation[10] = CMPLX(-1, -3);
+		constellation[11] = CMPLX(-1, -1);
+		constellation[12] = CMPLX(-3, 3);
+		constellation[13] = CMPLX(-3, 1);
+		constellation[14] = CMPLX(-3, -3);
+		constellation[15] = CMPLX(-3, -1);
+		constellation[16] = CMPLX(3, 5);
+		constellation[17] = CMPLX(1, 5);
+		constellation[18] = CMPLX(3, -5);
+		constellation[19] = CMPLX(1, -5);
+		constellation[20] = CMPLX(5, 3);
+		constellation[21] = CMPLX(5, 1);
+		constellation[22] = CMPLX(5, -3);
+		constellation[23] = CMPLX(5, -1);
+		constellation[24] = CMPLX(1, 3);
+		constellation[25] = CMPLX(1, 1);
+		constellation[26] = CMPLX(1, -3);
+		constellation[27] = CMPLX(1, -1);
+		constellation[28] = CMPLX(3, 3);
+		constellation[29] = CMPLX(3, 1);
+		constellation[30] = CMPLX(3, -3);
+		constellation[31] = CMPLX(3, -1);
+	} else if (M == MOD_64QAM) {
+		constellation[0] = CMPLX(-7, 7);
+		constellation[1] = CMPLX(-7, 5);
+		constellation[2] = CMPLX(-7, 1);
+		constellation[3] = CMPLX(-7, 3);
+		constellation[4] = CMPLX(-7, -7);
+		constellation[5] = CMPLX(-7, -5);
+		constellation[6] = CMPLX(-7, -1);
+		constellation[7] = CMPLX(-7, -3);
+		constellation[8] = CMPLX(-5, 7);
+		constellation[9] = CMPLX(-5, 5);
+		constellation[10] = CMPLX(-5, 1);
+		constellation[11] = CMPLX(-5, 3);
+		constellation[12] = CMPLX(-5, -7);
+		constellation[13] = CMPLX(-5, -5);
+		constellation[14] = CMPLX(-5, -1);
+		constellation[15] = CMPLX(-5, -3);
+		constellation[16] = CMPLX(-1, 7);
+		constellation[17] = CMPLX(-1, 5);
+		constellation[18] = CMPLX(-1, 1);
+		constellation[19] = CMPLX(-1, 3);
+		constellation[20] = CMPLX(-1, -7);
+		constellation[21] = CMPLX(-1, -5);
+		constellation[22] = CMPLX(-1, -1);
+		constellation[23] = CMPLX(-1, -3);
+		constellation[24] = CMPLX(-3, 7);
+		constellation[25] = CMPLX(-3, 5);
+		constellation[26] = CMPLX(-3, 1);
+		constellation[27] = CMPLX(-3, 3);
+		constellation[28] = CMPLX(-3, -7);
+		constellation[29] = CMPLX(-3, -5);
+		constellation[30] = CMPLX(-3, -1);
+		constellation[31] = CMPLX(-3, -3);
+		constellation[32] = CMPLX(7, 7);
+		constellation[33] = CMPLX(7, 5);
+		constellation[34] = CMPLX(7, 1);
+		constellation[35] = CMPLX(7, 3);
+		constellation[36] = CMPLX(7, -7);
+		constellation[37] = CMPLX(7, -5);
+		constellation[38] = CMPLX(7, -1);
+		constellation[39] = CMPLX(7, -3);
+		constellation[40] = CMPLX(5, 7);
+		constellation[41] = CMPLX(5, 5);
+		constellation[42] = CMPLX(5, 1);
+		constellation[43] = CMPLX(5, 3);
+		constellation[44] = CMPLX(5, -7);
+		constellation[45] = CMPLX(5, -5);
+		constellation[46] = CMPLX(5, -1);
+		constellation[47] = CMPLX(5, -3);
+		constellation[48] = CMPLX(1, 7);
+		constellation[49] = CMPLX(1, 5);
+		constellation[50] = CMPLX(1, 1);
+		constellation[51] = CMPLX(1, 3);
+		constellation[52] = CMPLX(1, -7);
+		constellation[53] = CMPLX(1, -5);
+		constellation[54] = CMPLX(1, -1);
+		constellation[55] = CMPLX(1, -3);
+		constellation[56] = CMPLX(3, 7);
+		constellation[57] = CMPLX(3, 5);
+		constellation[58] = CMPLX(3, 1);
+		constellation[59] = CMPLX(3, 3);
+		constellation[60] = CMPLX(3, -7);
+		constellation[61] = CMPLX(3, -5);
+		constellation[62] = CMPLX(3, -1);
+		constellation[63] = CMPLX(3, -3);
 	}
 
 	set_constellation(constellation, M);
@@ -196,7 +195,7 @@ static double cnorm(complex double val) {
     return re * re + im * im;
 }
 
-static void set_constellation(complex double *_constellation, int size) {
+static void set_constellation(complex double *_constellation, Mod_type size) {
 	float power_normalization_value = 0.0f;
 
 	constellation = calloc(size, sizeof (complex double));

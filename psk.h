@@ -19,21 +19,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-#ifndef INC_PSK_H_
-#define INC_PSK_H_
+#pragma once
 
 #include <complex.h>
 #include <math.h>
 
-#define MOD_BPSK 2
-#define MOD_QPSK 4
-#define MOD_8QAM 8
-#define MOD_16QAM 16
-#define MOD_32QAM 32
-#define MOD_64QAM 64
+typedef enum {
+    MOD_BPSK = 2,
+    MOD_QPSK = 4,
+    MOD_8QAM = 8,
+    MOD_16QAM = 16,
+    MOD_32QAM = 32,
+    MOD_64QAM = 64
+} Mod_type;
 
-void set_predefined_constellation(int M);
+void set_predefined_constellation(Mod_type);
 void mod(const int *in, int nItems, complex double *out);
 void demod(const complex double *in, int nItems, float *out, float variance);
-
-#endif
