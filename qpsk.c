@@ -17,49 +17,53 @@
 #include <time.h>
 #include <math.h>
 
+#include "psk.h"
 #include "qpsk.h"
 #include "costas_loop.h"
 #include "rrc_fir.h"
 
+// Externs
+
+extern complex double *constellation;
+
+extern int nBits;
+extern int nSymbols;
+
 // Prototypes
 
-static void qpsk_demod(complex float, int []);
 static void rx_frame(int16_t [], int []);
-static complex float qpsk_mod(int []);
-static int tx_frame(int16_t [], complex float [], int);
-static complex float qpsk_mod(int []);
-static int qpsk_packet_mod(int16_t [], int [], int);
+static int tx_frame(int16_t [], complex double [], int);
 
 // Globals
 
 FILE *fin;
 FILE *fout;
 
-complex float tx_filter[NTAPS];
-complex float rx_filter[NTAPS];
+complex double tx_filter[NTAPS];
+complex double rx_filter[NTAPS];
 
-complex float input_frame[FRAME_SIZE];
-complex float decimated_frame[FRAME_SIZE / 2];
-complex float costas_frame[FRAME_SIZE / CYCLES];
+complex double input_frame[FRAME_SIZE];
+complex double decimated_frame[FRAME_SIZE / 2];
+complex double costas_frame[FRAME_SIZE / CYCLES];
 
 // Two phase for full duplex
 
-complex float fbb_tx_phase;
-complex float fbb_tx_rect;
+complex double fbb_tx_phase;
+complex double fbb_tx_rect;
 
-complex float fbb_rx_phase;
-complex float fbb_rx_rect;
+complex double fbb_rx_phase;
+complex double fbb_rx_rect;
 
-float fbb_offset_freq;
+double fbb_offset_freq;
 
-float d_error;
+double d_error;
 
 #ifdef FUTURE
 /*
  * Resampler for 8 kHz to 48 kHz
  * Generate using fir1(47,1/6) in Octave
  */
-static const float filter48[] = {
+static const double filter48[] = {
     -3.55606818e-04,
     -8.98615286e-04,
     -1.40119781e-03,
@@ -109,19 +113,6 @@ static const float filter48[] = {
     -8.98615286e-04,
     -3.55606818e-04
 };
-#endif
-
-/*
- * QPSK Quadrant bit-pair values - Gray Coded
- */
-const complex float constellation[] = {
-    1.0f + 0.0f * I, //  I
-    0.0f + 1.0f * I, //  Q
-    0.0f - 1.0f * I, // -Q
-    -1.0f + 0.0f * I // -I
-};
-
-#ifdef FUTURE
 
 // Think about using 8 kHz rate versus 9600
 
@@ -131,7 +122,7 @@ const complex float constellation[] = {
  * n is the number of samples at the 8 kHz rate, there are OS_48 * n samples
  * at the 48 kHz rate.  A memory of OS_TAPS_48/OS_48 samples is reqd for in8k[]
  */
-void resample_8_to_48(float out48k[], float in8k[], int n)
+void resample_8_to_48(double out48k[], double in8k[], int n)
 {
     for (int i = 0; i < n; i++) {
 	for (int j = 0; j < OS_48; j++) {
@@ -157,7 +148,7 @@ void resample_8_to_48(float out48k[], float in8k[], int n)
  * samples at the 48 kHz rate.  As above however a memory of
  * OS_TAPS_48 samples is reqd for in48k[]
  */
-void resample_48_to_8(float out8k[], float in48k[], int n)
+void resample_48_to_8(double out8k[], double in48k[], int n)
 {
     for (int i = 0; i < n; i++) {
 	out8k[i] = 0.0f;
@@ -171,62 +162,39 @@ void resample_48_to_8(float out8k[], float in48k[], int n)
     for (int i = -OS_TAPS_48K; i < 0; i++)
 	in48k[i] = in48k[i + n * OS_48];
 }
-#endif
 
 /*
- * Gray coded QPSK demodulation function
- *
- * By rotating received symbol 45 degrees the bits
- * are easier to decode as they are in a specific
- * rectangular quadrants.
- * 
- * Each bit pair differs from the next by only one bit.
- */
-static void qpsk_demod(complex float symbol, int bits[]) {
-    /*
-     * Don't rotate when costas loop enabled
-     */
-    if (get_costas_enable() == false) {
-        symbol *= cmplx(ROTATE45);
-    }
-
-    bits[0] = crealf(symbol) < 0.0f; // I < 0 ?
-    bits[1] = cimagf(symbol) < 0.0f; // Q < 0 ?
-}
-
-/*
- * polarityChanged() true when inputs have opposite signs, false otherwise
+ * isPolarityChange() true when inputs have opposite signs, false otherwise
  *
  * NB: Works with -0.0 and 0.0 comparison.
  */
-static bool polarityChanged(float a, float b) {
+static bool isPolarityChange(double a, double b) {
     return (signbit(a) == 0) ^ (signbit(b) == 0);
 }
 
-#ifdef FUTURE
 /*
  * linearly interpolate at the fractional instant (as per "fltIdx") 
  * after "dn" samples in the input buffer.
  * Note: The input is assumed to be stored in reverse order.
  */
-static complex float linearInterp(complex float in[], int dn, float fltIdx) {   
+static complex double linearInterp(complex double in[], int dn, double fltIdx) {   
     return in[dn] + ((fltIdx - floorf(fltIdx)) * (in[dn-1] - in[dn]));
 }
 
 /*
  * early-late method
  */
-static void earlyLateGate(int numSymb, int N, int buffLen, float g, float tau[], complex float in[])
+static void earlyLateGate(int numSymb, int N, int buffLen, double g, double tau[], complex double in[])
 {
-    float Ts = .5f;    /* Half a symbol period */
+    double Ts = .5f;    /* Half a symbol period */
 
     for (int k = 0; k < numSymb; k++) {    
         /*
          * Sampling instants for tau calculation
          */
-        float fltIdx1 = N * ( (k+1) + tau[k+1]);
-        float fltIdx2 = N * ( (k+1) + Ts + tau[k+1]);
-        float fltIdx3 = N * ( (k+1) - Ts + tau[k]);
+        double fltIdx1 = N * ( (k+1) + tau[k+1]);
+        double fltIdx2 = N * ( (k+1) + Ts + tau[k+1]);
+        double fltIdx3 = N * ( (k+1) - Ts + tau[k]);
         
         /*
          * Select the second symbol as the current symbol so as
@@ -243,16 +211,16 @@ static void earlyLateGate(int numSymb, int N, int buffLen, float g, float tau[],
         /*
          * linearly interpolate between 2 available points
          */
-        complex float a1 = linearInterp(in, idx1_dn, fltIdx1);
-        complex float a2 = linearInterp(in, idx2_dn, fltIdx2);
-        complex float a3 = linearInterp(in, idx3_dn, fltIdx3);
+        complex double a1 = linearInterp(in, idx1_dn, fltIdx1);
+        complex double a2 = linearInterp(in, idx2_dn, fltIdx2);
+        complex double a3 = linearInterp(in, idx3_dn, fltIdx3);
 
         /*
          * Timing error calculation
          */
-        complex float ahat = a1 * (a2 - a3);
+        complex double ahat = a1 * (a2 - a3);
         
-        float eK = crealf(ahat) + cimagf(ahat);       /* error */
+        double eK = crealf(ahat) + cimagf(ahat);       /* error */
 
         tau[k+2] = tau[k+1] + (g * eK); /* Apply current estimate to next */
 
@@ -269,7 +237,8 @@ static void earlyLateGate(int numSymb, int N, int buffLen, float g, float tau[],
         }
     }
 }
-#endif
+
+// commented out for now, working on TX signal
 
 /*
  * Receive function
@@ -302,7 +271,7 @@ static void rx_frame(int16_t in[], int bits[]) {
     for (int i = 0; i < FRAME_SIZE; i++) {
         fbb_rx_phase *= fbb_rx_rect;
 
-        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);
+        input_frame[i] = fbb_rx_phase * ((double) in[i] / 16384.0f);
     }
 
     fbb_rx_phase /= cabsf(fbb_rx_phase); // normalize as magnitude can drift
@@ -312,11 +281,11 @@ static void rx_frame(int16_t in[], int bits[]) {
      */
     rrc_fir(rx_filter, input_frame, FRAME_SIZE);
 
-    float max_i = 0.0f;
-    float max_q = 0.0f;
+    double max_i = 0.0f;
+    double max_q = 0.0f;
 
-    float av_i = 0.0f;;
-    float av_q = 0.0f;
+    double av_i = 0.0f;;
+    double av_q = 0.0f;
 
     /*
      * Find maximum absolute I/Q value for one symbol length
@@ -342,8 +311,8 @@ static void rx_frame(int16_t in[], int bits[]) {
         /*
          * Create I/Q amplitude histograms
          */
-        float hv_i = (max_i / 8.0f);
-        float hv_q = (max_q / 8.0f);
+        double hv_i = (max_i / 8.0f);
+        double hv_q = (max_q / 8.0f);
     
         for (int k = 1; k < 8; k++) {
             if (av_i <= (hv_i * k)) {
@@ -401,7 +370,7 @@ static void rx_frame(int16_t in[], int bits[]) {
             phase_wrap();
             frequency_limit();
         
-            qpsk_demod(costas_frame[i], &bits[j]);
+            psk_demod(costas_frame[i], &bits[j]);
 
             //printf("%d%d ", bits[j], bits[j+1]);
         }
@@ -410,7 +379,7 @@ static void rx_frame(int16_t in[], int bits[]) {
 #ifdef TEST_SCATTER
             fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
 #endif
-            qpsk_demod(decimated_frame[i], &bits[j]);
+            psk_demod(decimated_frame[i], &bits[j]);
 
             //printf("%d%d ", bits[j], bits[j+1]);
         }
@@ -421,15 +390,16 @@ static void rx_frame(int16_t in[], int bits[]) {
      */
     fbb_offset_freq = (get_frequency() * RS / TAU);	// convert radians to freq at symbol rate
 }
+#endif
 
 /*
  * Modulate the 2400 sym/s. First re-sample at 9600 samples/s inserting zero's,
  * then post filtered using the root raised cosine FIR, then translated to
  * 1500 Hz center frequency.
  */
-static int tx_frame(int16_t samples[], complex float symbol[], int length) {
+static int tx_frame(int16_t samples[], complex double symbol[], int length) {
     int n = (length * CYCLES);
-    complex float signal[n];	// big enough for 4x sample rate
+    complex double signal[n];	// big enough for 4x sample rate
 
     /*
      * Build the 2400 sym/s packet Frame by zero padding
@@ -474,31 +444,10 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
     return n;
 }
 
-/*
- * Gray coded QPSK modulation function
- */
-static complex float qpsk_mod(int bits[]) {
-    return constellation[(bits[1] << 1) | bits[0]];
-}
-
-static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length) {
-    complex float symbol[length];
-    int dibit[2];
-
-    for (int i = 0, s = 0; i < length; i++, s += 2) {
-        dibit[0] = tx_bits[s + 1] & 0x1;
-        dibit[1] = tx_bits[s ] & 0x1;
-
-        symbol[i] = qpsk_mod(dibit);
-    }
-
-    return tx_frame(samples, symbol, length);
-}
-
-
 // Main Program
 
 int main(int argc, char** argv) {
+    complex double qpskout[FRAME_SIZE];
     int bits[6400];
     int16_t frame[FRAME_SIZE];
     int length;
@@ -522,6 +471,12 @@ int main(int argc, char** argv) {
     rrc_make(FS, RS, .35f);
 
     /*
+     * Create QPSK functions
+     */
+    create_psk();
+    set_predefined_constellation(MOD_QPSK);
+
+    /*
      * create the QPSK data waveform.
      * This simulates the transmitted packets.
      */
@@ -535,14 +490,17 @@ int main(int argc, char** argv) {
     fbb_offset_freq = (CENTER + 50.0);
 
     for (int k = 0; k < 100; k++) {
-        // 256 QPSK
-        for (int i = 0; i < FRAME_SIZE; i += 2) {
+
+        // 256 QPSK dibits of just random bits
+
+        for (int i = 0; i < FRAME_SIZE; i++) {
             bits[i] = rand() % 2;
-            bits[i + 1] = rand() % 2;
         }
 
-        // Send 256 dibits
-        length = qpsk_packet_mod(frame, bits, (FRAME_SIZE / 2));
+        psk_mod(bits, FRAME_SIZE, qpskout);
+        
+        // FRAME_SIZE / 2 is number of QPSK symbols
+        length = tx_frame(frame, qpskout, FRAME_SIZE/2);
 
         fwrite(frame, sizeof (int16_t), length, fout);
     }
@@ -566,10 +524,12 @@ int main(int argc, char** argv) {
         if (count != FRAME_SIZE)
             break;
 
-        rx_frame(frame, bits);
+        //rx_frame(frame, bits);
     }
     
     fclose(fin);
+
+    destroy_psk();
 
     return (EXIT_SUCCESS);
 }

@@ -19,8 +19,8 @@ extern "C" {
 #define NTAPS         127	// lower bauds need more taps, 127 for 300 baud is good
 #define GAIN          1.8
 
-void rrc_fir(complex float [], complex float [], int);
-void rrc_make(float, float, float);
+void rrc_fir(complex double [], complex double [], int);
+void rrc_make(double, double, double);
 
 #ifdef __cplusplus
 }

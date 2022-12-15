@@ -1,4 +1,6 @@
 /*
+ * Original code from:
+ *
  * Mercury: A configurable open-source software-defined modem.
  * Copyright (C) 2022 Fadi Jerji
  * Author: Fadi Jerji
@@ -33,6 +35,8 @@ typedef enum {
     MOD_64QAM = 64
 } Mod_type;
 
+void create_psk(void);
+void destroy_psk(void);
 void set_predefined_constellation(Mod_type);
-void mod(const int *in, int nItems, complex double *out);
-void demod(const complex double *in, int nItems, float *out, float variance);
+void psk_mod(const int *in, int nItems, complex double *out);
+void psk_demod(const complex double *in, int nItems, float *out, float variance);

@@ -1,4 +1,6 @@
 /*
+ * Original code from:
+ *
  * Mercury: A configurable open-source software-defined modem.
  * Copyright (C) 2022 Fadi Jerji
  * Author: Fadi Jerji
@@ -31,10 +33,10 @@ char *copyright_psk = "psk: Copyright (C) 2022 Fadi Jerji";
 static void set_constellation(complex double *, Mod_type);
 static double cnorm(complex double);
 
-static complex double *constellation;
+complex double *constellation;
 
-static int nBits;
-static int nSymbols;
+int nBits;
+int nSymbols;
 
 void create_psk() {
 	constellation = (complex double *)NULL;
@@ -218,7 +220,7 @@ static void set_constellation(complex double *_constellation, Mod_type size) {
 	}
 }
 
-void mod(const int *in, int nItems, complex double *out) {
+void psk_mod(const int *in, int nItems, complex double *out) {
 	for (int i = 0; i < nItems; i += nBits)	{
 		unsigned int const_loc = 0;
 		
@@ -233,7 +235,7 @@ void mod(const int *in, int nItems, complex double *out) {
 	}
 }
 
-void demod(const complex double *in, int nItems, float *out, float variance) {
+void psk_demod(const complex double *in, int nItems, float *out, float variance) {
 	float D[nSymbols];
 	float LLR[nBits];
 	float Dmin0, Dmin1;
