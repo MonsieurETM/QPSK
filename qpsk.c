@@ -195,6 +195,83 @@ static void qpsk_demod(complex float symbol, int bits[]) {
 }
 
 /*
+ * polarityChanged() true when inputs have opposite signs, false otherwise
+ *
+ * NB: Works with -0.0 and 0.0 comparison.
+ */
+static bool polarityChanged(float a, float b) {
+    return (signbit(a) == 0) ^ (signbit(b) == 0);
+}
+
+#ifdef FUTURE
+/*
+ * linearly interpolate at the fractional instant (as per "fltIdx") 
+ * after "dn" samples in the input buffer.
+ * Note: The input is assumed to be stored in reverse order.
+ */
+static complex float linearInterp(complex float in[], int dn, float fltIdx) {   
+    return in[dn] + ((fltIdx - floorf(fltIdx)) * (in[dn-1] - in[dn]));
+}
+
+/*
+ * early-late method
+ */
+static void earlyLateGate(int numSymb, int N, int buffLen, float g, float tau[], complex float in[])
+{
+    float Ts = .5f;    /* Half a symbol period */
+
+    for (int k = 0; k < numSymb; k++) {    
+        /*
+         * Sampling instants for tau calculation
+         */
+        float fltIdx1 = N * ( (k+1) + tau[k+1]);
+        float fltIdx2 = N * ( (k+1) + Ts + tau[k+1]);
+        float fltIdx3 = N * ( (k+1) - Ts + tau[k]);
+        
+        /*
+         * Select the second symbol as the current symbol so as
+         * to have a buffer of a symbol on both sides [-T..T..+T]
+         */
+        int idx1_dn = (buffLen - N-1) - ( (int) floorf(fltIdx1) ); 
+        int idx2_dn = (buffLen - N-1) - ( (int) floorf(fltIdx2) ); 
+        int idx3_dn = (buffLen - N-1) - ( (int) floorf(fltIdx3) );
+        
+        /*
+         * Signal values at sampling instants
+         */
+
+        /*
+         * linearly interpolate between 2 available points
+         */
+        complex float a1 = linearInterp(in, idx1_dn, fltIdx1);
+        complex float a2 = linearInterp(in, idx2_dn, fltIdx2);
+        complex float a3 = linearInterp(in, idx3_dn, fltIdx3);
+
+        /*
+         * Timing error calculation
+         */
+        complex float ahat = a1 * (a2 - a3);
+        
+        float eK = crealf(ahat) + cimagf(ahat);       /* error */
+
+        tau[k+2] = tau[k+1] + (g * eK); /* Apply current estimate to next */
+
+        /*
+         * Wrap tau to be within [-T/2, +T/2] range
+         */
+        if (fabs(tau[k+2]) > Ts) {
+            tau[k+2] = fmod(tau[k+2] + Ts, T); /* [-T, T], due to fmod */
+
+            if (tau[k+2] < 0.0f)
+                tau[k+2] += 1.0f;  /* [0, T] */
+            
+            tau[k+2] -= Ts;                    /* [-T/2, T/2] */
+        }
+    }
+}
+#endif
+
+/*
  * Receive function
  * 
  * 2400 baud QPSK at 9600 samples/sec.
@@ -205,12 +282,6 @@ static void qpsk_demod(complex float symbol, int bits[]) {
  *       It doesn't work with different symbol rates.
  */
 static void rx_frame(int16_t in[], int bits[]) {
-    float max_i = 0.0f;
-    float max_q = 0.0f;
-
-    float av_i = 0.0f;;
-    float av_q = 0.0f;
-
     /*
      * You need as many histograms as you think
      * you'll need for timing offset. Using 8 for now.
@@ -241,11 +312,17 @@ static void rx_frame(int16_t in[], int bits[]) {
      */
     rrc_fir(rx_filter, input_frame, FRAME_SIZE);
 
+    float max_i = 0.0f;
+    float max_q = 0.0f;
+
     /*
      * Find maximum absolute I/Q value for one symbol length
      * after passing through the filter
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
+        float av_i = 0.0f;;
+        float av_q = 0.0f;
+
         for (int j = 0; j < CYCLES; j++) {
             av_i += fabsf(crealf(input_frame[i+j]));
             av_q += fabsf(cimagf(input_frame[i+j]));
