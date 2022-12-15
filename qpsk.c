@@ -315,14 +315,14 @@ static void rx_frame(int16_t in[], int bits[]) {
     float max_i = 0.0f;
     float max_q = 0.0f;
 
+    float av_i = 0.0f;;
+    float av_q = 0.0f;
+
     /*
      * Find maximum absolute I/Q value for one symbol length
      * after passing through the filter
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
-        float av_i = 0.0f;;
-        float av_q = 0.0f;
-
         for (int j = 0; j < CYCLES; j++) {
             av_i += fabsf(crealf(input_frame[i+j]));
             av_q += fabsf(cimagf(input_frame[i+j]));
