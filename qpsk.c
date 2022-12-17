@@ -26,6 +26,7 @@
 
 extern complex double *constellation;
 
+extern int Nfft;
 extern int nBits;
 extern int nSymbols;
 
@@ -189,6 +190,8 @@ int main(int argc, char** argv) {
     int length;
 
     srand(time(0));
+
+    Nfft = 512;
 
     /*
      * All terms are radians per sample.
