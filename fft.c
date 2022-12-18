@@ -33,10 +33,6 @@
 
 #include "fft.h"
 
-// Globals
-
-int Nfft;	// variable will be set in main()
-
 // Functions
 
 static void _fft(complex double *v, int n) {
@@ -98,14 +94,14 @@ static void _ifft(complex double *v, int n) {
 }
 
 void fft(complex double *in, complex double *out) {
-    for (int i = 0; i < Nfft; i++) {
+    for (int i = 0; i < NFFT; i++) {
         out[i] = in[i];
     }
 
-    _fft(out, Nfft);
+    _fft(out, NFFT);
 
-    for (int i = 0; i < Nfft; i++) {
-        out[i] = out[i] / (double)Nfft;
+    for (int i = 0; i < NFFT; i++) {
+        out[i] = out[i] / (double)NFFT;
     }
 }
 
@@ -122,11 +118,11 @@ void fftn(complex double *in, complex double *out, int n) {
 }
 
 void ifft(complex double *in, complex double *out) {
-    for (int i = 0; i < Nfft; i++) {
+    for (int i = 0; i < NFFT; i++) {
         out[i] = in[i];
     }
 
-    _ifft(out, Nfft);
+    _ifft(out, NFFT);
 }
 
 void ifftn(complex double *in, complex double *out, int n) {

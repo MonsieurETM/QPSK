@@ -36,6 +36,7 @@
 #endif
 
 #define TAU             (2.0 * M_PI)
+#define NFFT		512
 
 void fft(complex double *, complex double *);
 void fftn(complex double *, complex double *, int);

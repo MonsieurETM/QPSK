@@ -32,6 +32,9 @@ extern "C"
 #define TAU             (2.0 * M_PI)
 #define ROTATE45        (M_PI / 4.0)
 
+#define INTERPOLATION   0
+#define DECIMATION      1
+
 /*
  * This method is much faster than using cexp()
  */
