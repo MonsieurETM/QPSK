@@ -37,58 +37,60 @@
 
 static void _fft(complex double *v, int n) {
     if (n > 1) {
-        complex double *tmp = (complex double *) calloc(n, sizeof (complex double));
-        complex double z, w;
-
-        complex double *ve = tmp;
-        complex double *vo = tmp + (n / 2);
+        complex double tmp[n];
+        complex double *ve = &tmp[0];
+        complex double *vo = &tmp[n / 2];
 
         for (int k = 0; k < n / 2; k++) {
-            ve[k] = v[2 * k];
-            vo[k] = v[2 * k + 1];
+            int even = 2 * k;  // calculate once
+
+            ve[k] = v[even];
+            vo[k] = v[even + 1];
         }
 
-        _fft( ve, n / 2 );
-        _fft( vo, n / 2 );
+        _fft(ve, n / 2);
+        _fft(vo, n / 2);
 
         for (int m = 0; m < (n / 2); m++) {
-            w = (cos(TAU * (double)m / (double)n)) + (-sin(TAU * (double)m / (double)n)) * I;
-            z = (creal(w) * creal(vo[m]) - cimag(w) * cimag(vo[m])) + (creal(w) * cimag(vo[m]) + cimag(w) * creal(vo[m])) * I;
-            v[m] = (creal(ve[m]) + creal(z)) + (cimag(ve[m]) + cimag(z)) * I;
-            v[m + n / 2] = (creal(ve[m]) - creal(z)) + (cimag(ve[m]) - cimag(z)) * I; 
-        }
+            complex double w = (cos(TAU * (double)m / (double)n)) +
+                                   (-sin(TAU * (double)m / (double)n)) * I;
+            complex double z = (creal(w) * creal(vo[m]) - cimag(w) * cimag(vo[m])) +
+                                   (creal(w) * cimag(vo[m]) + cimag(w) * creal(vo[m])) * I;
 
-        if (tmp != (complex double *)NULL) {
-            free(tmp);
+            v[m] = (creal(ve[m]) + creal(z)) +
+                               (cimag(ve[m]) + cimag(z)) * I;
+            v[m + n / 2] = (creal(ve[m]) - creal(z)) +
+                               (cimag(ve[m]) - cimag(z)) * I; 
         }
     }
 }
 
 static void _ifft(complex double *v, int n) {
     if (n > 1) {
-        complex double *tmp = (complex double *) calloc(n, sizeof (complex double));
-        complex double z, w;
-
-        complex double *ve = tmp;
-        complex double *vo = tmp + (n / 2);
+        complex double tmp[n];
+        complex double *ve = &tmp[0];
+        complex double *vo = &tmp[n / 2];
 
         for (int k = 0; k < n / 2; k++) {
-            ve[k] = v[2 * k];
-            vo[k] = v[2 * k + 1];
+            int even = 2 * k;  // calculate once
+
+            ve[k] = v[even];
+            vo[k] = v[even + 1];
         }
 
-        _ifft( ve, n / 2 );
-        _ifft( vo, n / 2 );
+        _ifft(ve, n / 2);
+        _ifft(vo, n / 2);
 
         for (int m = 0; m < (n / 2); m++) {
-            w = (cos(TAU * (double)m / (double)n)) + (sin(TAU * (double)m / (double)n)) * I; // conjugate
-            z = (creal(w) * creal(vo[m]) - cimag(w) * cimag(vo[m])) + (creal(w) * cimag(vo[m]) + cimag(w) * creal(vo[m])) * I;
-            v[m] = (creal(ve[m]) + creal(z)) + (cimag(ve[m]) + cimag(z)) * I;
-            v[m + n / 2] = (creal(ve[m]) - creal(z)) + (cimag(ve[m]) - cimag(z)) * I; 
-        }
+            complex double w = (cos(TAU * (double)m / (double)n)) +
+                                   (sin(TAU * (double)m / (double)n)) * I; // conjugate
+            complex double z = (creal(w) * creal(vo[m]) - cimag(w) * cimag(vo[m])) +
+                                   (creal(w) * cimag(vo[m]) + cimag(w) * creal(vo[m])) * I;
 
-        if (tmp != (complex double *)NULL) {
-            free(tmp);
+            v[m] = (creal(ve[m]) + creal(z)) +
+                               (cimag(ve[m]) + cimag(z)) * I;
+            v[m + n / 2] = (creal(ve[m]) - creal(z)) +
+                               (cimag(ve[m]) - cimag(z)) * I; 
         }
     }
 }
