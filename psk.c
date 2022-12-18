@@ -28,8 +28,6 @@
 
 #include "psk.h"
 
-char *copyright_psk = "psk: Copyright (C) 2022 Fadi Jerji";
-
 static void set_constellation(complex double *, Mod_type);
 static double cnorm(complex double);
 
