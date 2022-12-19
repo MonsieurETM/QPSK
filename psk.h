@@ -23,8 +23,12 @@
  */
 #pragma once
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <complex.h>
-#include <math.h>
 
 typedef enum {
     MOD_BPSK = 2,
@@ -37,6 +41,11 @@ typedef enum {
 
 void create_psk(void);
 void destroy_psk(void);
-void set_predefined_constellation(Mod_type);
-void psk_mod(const int *in, int nItems, complex double *out);
-void psk_demod(const complex double *in, int nItems, float *out, float variance);
+void set_constellation(Mod_type);
+void psk_mod(const int *, int, complex double *);
+void psk_demod(const complex double *, int, float *, float);
+
+#ifdef __cplusplus
+}
+#endif
+

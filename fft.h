@@ -29,6 +29,11 @@
  
 #pragma once
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <complex.h>
 
 #ifndef M_PI
@@ -42,4 +47,8 @@ void fft(complex double *, complex double *);
 void fftn(complex double *, complex double *, int);
 void ifft(complex double *, complex double *);
 void ifftn(complex double *, complex double *, int);
+
+#ifdef __cplusplus
+}
+#endif
 

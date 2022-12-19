@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
      * Create QPSK functions
      */
     create_psk();
-    set_predefined_constellation(MOD_QPSK);
+    set_constellation(MOD_QPSK);
 
     /*
      * create the QPSK data waveform.
