@@ -222,10 +222,10 @@ void psk_mod(const int *in, int nItems, complex double *out) {
     }
 }
 
-void psk_demod(const complex double *in, int nItems, float *out, float variance) {
-    float D[nSymbols];
-    float LLR[nBits];
-    float Dmin0, Dmin1;
+void psk_demod(const complex double *in, int nItems, double *out, double variance) {
+    double D[nSymbols];
+    double LLR[nBits];
+    double Dmin0, Dmin1;
     unsigned int mask;
 
     for (int i = 0; i < nItems; i += nBits) {

@@ -35,7 +35,7 @@ extern int nSymbols;
 
 // Prototypes
 
-static void rx_frame(int16_t [], float []);
+static void rx_frame(int16_t [], double []);
 static int tx_frame(int16_t [], complex double [], int);
 
 // Globals
@@ -238,7 +238,7 @@ int time_sync(complex double *in, int size, int interpolation_rate, int location
  *
  * Remove any frequency and timing offsets
  */
-static void rx_frame(int16_t in[], float output[]) {
+static void rx_frame(int16_t in[], double output[]) {
     /*
      * Convert input PCM to complex samples
      * at 9600 Hz sample rate
@@ -284,7 +284,7 @@ static void rx_frame(int16_t in[], float output[]) {
             frequency_limit();
         }
 
-        psk_demod(costas_frame, (FRAME_SIZE / CYCLES), output, 2.6f);
+        psk_demod(costas_frame, (FRAME_SIZE / CYCLES), output, 2.6);
     } else {
         for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
 #ifdef TEST_SCATTER
@@ -292,7 +292,7 @@ static void rx_frame(int16_t in[], float output[]) {
 #endif
         }
 
-        psk_demod(decimated_frame, (FRAME_SIZE / CYCLES), output, 2.6f);
+        psk_demod(decimated_frame, (FRAME_SIZE / CYCLES), output, 2.6);
     }
 
     /*
@@ -426,7 +426,7 @@ int main(int argc, char** argv) {
     fbb_rx_phase = cmplx(0.);
     fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
 
-    float output[(FRAME_SIZE / CYCLES)];
+    double output[(FRAME_SIZE / CYCLES)];
 
     while (1) {
         /*

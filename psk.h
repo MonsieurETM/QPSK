@@ -43,7 +43,7 @@ void create_psk(void);
 void destroy_psk(void);
 void set_constellation(Mod_type);
 void psk_mod(const int *, int, complex double *);
-void psk_demod(const complex double *, int, float *, float);
+void psk_demod(const complex double *, int, double *, double);
 
 #ifdef __cplusplus
 }
