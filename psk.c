@@ -194,7 +194,7 @@ void set_constellation(Mod_type M) {
     nSymbols = M;
     nBits = (int) log2(M);
 
-    float power_normalization_value = 0.0f;
+    double power_normalization_value = 0.;
 
     for (int i = 0; i < M; i++) {
         power_normalization_value += cnorm(constellation[i]);
