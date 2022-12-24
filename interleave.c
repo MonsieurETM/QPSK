@@ -78,6 +78,22 @@ void interleave(uint8_t *inout, int nbytes, int dir) {
 }
 
 #ifdef DEBUG
+#define DATLEN 8
+
+void printData(char *str, uint8_t val[]) {
+    printf("%s", str);
+
+    for (int i = 0; i < DATLEN; i++) {
+        for (int j = 7; j >= 0; j--) {
+            printf("%d", (val[i] >> j) & 0x1);
+        }
+
+        printf(" ");
+    }
+
+    printf("\n");
+}
+
 /*
  * I get the following data for 4 bytes interleaved into 8 bytes
  *
@@ -86,42 +102,14 @@ void interleave(uint8_t *inout, int nbytes, int dir) {
  * Deinterleaved Data: 10101010 10101010 10101010 10101010 00000000 00000000 00000000 00000000
  */
 int main(int argc, char **argv) {
-    uint8_t data[8] = { 0b10101010, 0b10101010, 0b10101010, 0b10101010, 0, 0, 0, 0 };
+    uint8_t data[DATLEN] = { 0b10101010, 0b10101010, 0b10101010, 0b10101010, 0, 0, 0, 0 };
 
-    printf("Original Data:      ");
+    printData("Original Data:      ", data);
 
-    for (int i = 0; i < 8; i++) {
-        for (int j = 7; j >= 0; j--) {
-            printf("%d", (data[i] >> j) & 0x1);
-        }
+    interleave(data, DATLEN, INTERLEAVE);
+    printData("Interleaved Data:   ", data);
 
-        printf(" ");
-    }
-
-    printf("\nInterleaved Data:   ");
-
-    interleave(data, 8, INTERLEAVE);
-
-    for (int i = 0; i < 8; i++) {
-        for (int j = 7; j >= 0; j--) {
-            printf("%d", (data[i] >> j) & 0x1);
-        }
-
-        printf(" ");
-    }
-
-    printf("\nDeinterleaved Data: ");
-
-    interleave(data, 8, DEINTERLEAVE);
-
-    for (int i = 0; i < 8; i++) {
-        for (int j = 7; j >= 0; j--) {
-            printf("%d", (data[i] >> j) & 0x1);
-        }
-
-        printf(" ");
-    }
-
-    printf("\n");
+    interleave(data, DATLEN, DEINTERLEAVE);
+    printData("Deinterleaved Data: ", data);
 }
 #endif
