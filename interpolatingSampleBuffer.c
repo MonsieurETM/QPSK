@@ -353,14 +353,17 @@ static double getQuadrature(double interpolation) {
     }
 }
 
-complex double sampleFilter(complex double IQSamples[], int offset, double mu) {
-    double isamples[mDelayLineSize];
-    double qsamples[mDelayLineSize];
+complex double sampleFilter(complex double IQSamples[], size_t size, int offset, double mu) {
+    double isamples[size];
+    double qsamples[size];
 
-    for (int i = 0; i < mDelayLineSize; i++) {
+    for (int i = 0; i < size; i++) {
         isamples[i] = creal(IQSamples[i]);
         qsamples[i] = cimag(IQSamples[i]);
     }
+
+    //Increment pointer and keep pointer in bounds
+    mDelayLinePointer = (mDelayLinePointer + size) % mTwiceSamplesPerSymbol;
 
     double ii = interp_filter(isamples, offset, mu);
     double qq = interp_filter(qsamples, offset, mu);
