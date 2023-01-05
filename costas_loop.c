@@ -41,7 +41,7 @@ void create_control_loop(double loop_bw, double min_freq, double max_freq) {
     set_max_freq(max_freq);
     set_min_freq(min_freq);
 
-    set_damping_factor(sqrtf(2.) / 2.);
+    set_damping_factor(sqrt(2.) / 2.);
 
     // Calls update_gains() which sets alpha and beta
     set_loop_bandwidth(loop_bw);
