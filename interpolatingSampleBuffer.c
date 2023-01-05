@@ -209,10 +209,8 @@ void create_interpolatingSampleBuffer(double samplesPerSymbol, double sampleCoun
     mPrecedingSample = 0.0;
     mCurrentSample = 0.0;
     mMiddleSample = 0.0;
-        
     mDelayLinePointer = 0;
     mSampleCounterGain = 0.5;
-        
     mGain = 1.0;
 }
 
@@ -237,7 +235,7 @@ void create_interpolatingSampleBuffer(double samplesPerSymbol, double sampleCoun
  */
 static double interp_filter(double samples[], int offset, double mu) {
         // Ensure we have enough samples in the array
-        if (mDelayLineSize >= offset + 7) {
+        if (mDelayLinePointer >= offset + 7) {		// I'm guessing in translation [SRS]
             return 0.0;
         }
 
