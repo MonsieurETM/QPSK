@@ -19,6 +19,7 @@
 #include <math.h>
 
 #include "interp.h"
+#include "costas-loop.h"
 
 static complex double mPreviousCurrentSample;
 static complex double mPreviousMiddleSample;
@@ -34,7 +35,6 @@ static complex double mReceivedSample;
  * @param interpolatingSampleBuffer hold samples for interpolating a symbol
  */
 void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
-    create_pll();
     create_symbolEvaluator();
     create_interpolatingSampleBuffer(samplesPerSymbol, sampleCounterGain);
 
@@ -84,11 +84,11 @@ static Dibit calculateSymbol() {
     // Pass symbols to evaluator to determine timing and phase error and make symbol decision
     setSymbols(mMiddleSymbol, mCurrentSymbol);
 
-    // Update symbol timing error
+    // Update symbol timing error in Interpolator
     resetAndAdjust(getTimingError());
 
     // Update PLL phase error
-    adjustPLL(getPhaseError());
+    costas_adjust(getPhaseError());
 
     // Store current samples/symbols for next symbol calculation
     mPreviousMiddleSample = middleSample;
@@ -110,7 +110,7 @@ void demod_receive(complex double sample) {
 
     // Mix current sample with costas loop to remove any rotation
     // that is present from a mis-tuned carrier frequency
-    mReceivedSample *= incrementAndGetCurrentVectorPLL();
+    mReceivedSample *= incrementAndGetCurrentVector();
 
     // Store the sample in the interpolating buffer
     interp_receive(mReceivedSample);

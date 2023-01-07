@@ -17,6 +17,8 @@
 
 #include "qpsk.h"
 #include "rrc_fir.h"
+#include "interp.h"
+#include "costas-loop.h"
 
 // Prototypes
 
@@ -47,8 +49,6 @@ complex double fbb_rx_phase;
 complex double fbb_rx_rect;
 
 double fbb_offset_freq;
-
-double d_error;
 
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
@@ -274,6 +274,11 @@ int main(int argc, char** argv) {
     int length;
 
     srand(time(0));
+
+    create_costasLoop(FS, RS);
+    double samplesPerSymbol = FS / RS;
+
+    create_QPSKDemodulator(samplesPerSymbol, 0.1);
 
     /*
      * Create an RRC filter using the

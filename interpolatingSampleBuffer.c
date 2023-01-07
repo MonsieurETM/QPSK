@@ -261,7 +261,7 @@ static double interp_filter(double samples[], int offset, double mu) {
  *
  * @param sample
  */
-void receive(complex double sample) {
+void interp_receive(complex double sample) {
     mSamplingPoint--;
 
     //Fill up the delay line to use with the interpolator

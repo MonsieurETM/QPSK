@@ -1,7 +1,7 @@
 # Makefile for QPSK test modem
 
-SRC=qpsk.c rrc_fir.c 
-HEADER=qpsk.h rrc_fir.h
+SRC=qpsk.c rrc_fir.c interpolatingSampleBuffer.c costas-loop.c QPSKDemodulator.c symbolEvaluator.c
+HEADER=qpsk.h rrc_fir.h interp.h costas-loop.h
 
 qpsk: ${SRC} ${HEADER}
 	gcc -std=c11 ${SRC} -DTEST_SCATTER -o qpsk -Wall -lm

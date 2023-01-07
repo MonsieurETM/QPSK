@@ -20,6 +20,7 @@
 #include <math.h>
 #include <complex.h>
 
+#include "qpsk.h"
 #include "interp.h"
 
 static double mPhaseError;
@@ -96,7 +97,7 @@ void setSymbols(complex double middle, complex double current) {
     double errorInphase = (creal(mPreviousSymbol) - creal(current)) * creal(middle);
     double errorQuadrature = (cimag(mPreviousSymbol) - cimag(current)) * cimag(middle);
 
-    mTimingError = normalize(errorInphase + errorQuadrature, .3);
+    mTimingError = enormalize(errorInphase + errorQuadrature, 0.3);
 
     // Store the current symbol to use in the next symbol calculation
     mPreviousSymbol = current;
@@ -141,6 +142,14 @@ double getPhaseError() {
 }
 
 /*
+ * Reference symbol that is closest to the transmitted/sampled symbol.
+ * @return 
+ */
+Dibit getSymbolDecision() {
+    return mSymbolDecision;
+} 
+
+/*
  * Timing error of the symbol relative to the nearest reference symbol.
  *
  * @return timing error in radians of angular distance from the reference
@@ -151,13 +160,5 @@ double getPhaseError() {
  */
 double getTimingError() {
     return mTimingError;
-}
-
-/*
- * Reference symbol that is closest to the transmitted/sampled symbol.
- * @return 
- */
-Dibit getSymbolDecision() {
-    return mSymbolDecision;
 }
 

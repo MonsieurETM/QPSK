@@ -5,12 +5,16 @@ extern "C"
 {
 #endif
 
+#include <stddef.h>
 #include <complex.h>
 #include <stdbool.h>
 #include <math.h>
 
-#define cmplx(value) (cosf(value) + sinf(value) * I)
-#define cmplxconj(value) (cosf(value) + sinf(value) * -I)
+#ifndef M_PI
+#define M_PI            3.14159265358979323846
+#endif
+
+#define TAU             (2.0 * M_PI)
 
 #define ROTATE_FROM_PLUS_135  (-3.0 * M_PI / 4.0)
 #define ROTATE_FROM_PLUS_45   (-1.0 * M_PI / 4.0)
@@ -32,7 +36,7 @@ double getSamplingPoint(void);
 
 bool hasSymbol(void);
 
-complex double sampleFilter(complex double [], int, int, double);
+complex double sampleFilter(complex double [], size_t, int, double);
 complex double getPrecedingSample(void);
 complex double getCurrentSample(void);
 complex double getMiddleSample(void);
@@ -43,7 +47,7 @@ double getPhaseError(void);
 double getTimingError(void);
 Dibit getSymbolDecision(void);
 
-void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
+void create_QPSKDemodulator(double, double);
 void demod_receive(complex double);
 
 #ifdef __cplusplus
