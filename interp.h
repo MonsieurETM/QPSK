@@ -37,7 +37,6 @@ double getSamplingPoint(void);
 
 bool hasSymbol(void);
 
-complex double sampleFilter(complex double [], size_t, int, double);
 complex double getPrecedingSample(void);
 complex double getCurrentSample(void);
 complex double getMiddleSample(void);

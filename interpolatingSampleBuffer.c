@@ -18,6 +18,7 @@
  * Translated from Java by S. Sampson
  */
  
+#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <complex.h>
@@ -234,11 +235,14 @@ void create_interpolatingSampleBuffer(double samplesPerSymbol, double sampleCoun
  * @return - interpolated sample value
  */
 static double interp_filter(double samples[], int offset, double mu) {
+// TODO
+// I don't know the length of the samples array??
+//
         // Ensure we have enough samples in the array
-        if (mDelayLinePointer >= offset + 7) {		// I'm guessing in translation [SRS]
-            return 0.0;
+        if ((mDelayLineSize - mDelayLinePointer) >= offset + 7) {		// I'm guessing in translation [SRS]
+            return -1000.0;
         }
-
+        
         double accumulator;
 
         // Identify the filter bank that corresponds to mu
@@ -353,24 +357,6 @@ static double getQuadrature(double interpolation) {
     }
 }
 
-complex double sampleFilter(complex double IQSamples[], size_t size, int offset, double mu) {
-    double isamples[size];
-    double qsamples[size];
-
-    for (int i = 0; i < size; i++) {
-        isamples[i] = creal(IQSamples[i]);
-        qsamples[i] = cimag(IQSamples[i]);
-    }
-
-    //Increment pointer and keep pointer in bounds
-    mDelayLinePointer = (mDelayLinePointer + size) % mTwiceSamplesPerSymbol;
-
-    double ii = interp_filter(isamples, offset, mu);
-    double qq = interp_filter(qsamples, offset, mu);
-
-    return CMPLX(ii, qq);
-}
-
 /*
  * Un-interpolated sample that precedes the current interpolated sampling
  * point.
@@ -379,8 +365,7 @@ complex double sampleFilter(complex double IQSamples[], size_t size, int offset,
  * sample index 3 and index 4 and the sample is interpolated from sample
  * indexes 0 - 7, therefore the uninterpolated sample that immediately
  * precedes the current sample is located at index 3.
- *
- * @return
+
  */
 complex double getPrecedingSample() {
     mPrecedingSample = CMPLX(mDelayLineInphase[mDelayLinePointer + 3], mDelayLineQuadrature[mDelayLinePointer + 3]);
@@ -394,10 +379,15 @@ complex double getPrecedingSample() {
  * Note: this method should only be invoked after testing for
  * a complete symbol with the hasSymbol() method.
  *
- * @return
+ * Called from QPSKDemodulator
  */
 complex double getCurrentSample() {
     // Calculate interpolated current sample
+    // -10000.0 means there wasn't enough samples yet
+    if ((getInphase(mSamplingPoint) == -10000.0) || (getQuadrature(mSamplingPoint) == -10000.0)) {
+        return -10000.0;
+    }
+
     mCurrentSample = CMPLX(getInphase(mSamplingPoint), getQuadrature(mSamplingPoint));
 
     return mCurrentSample;
@@ -410,14 +400,19 @@ complex double getCurrentSample() {
  * Note: this method should only be invoked after testing for
  * a complete symbol with the hasSymbol() method.
  *
- * @return
+ * Called from QPSKDemodulator
  */
 complex double getMiddleSample() {
     double halfDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol / 2.0;
 
     // Interpolated sample that is half a symbol away from (occurred before) the current sample.
+    // -10000.0 means there wasn't enough samples yet
+    if ((getInphase(halfDetectedSamplesPerSymbol) == -10000.0) || (getQuadrature(halfDetectedSamplesPerSymbol) == -10000.0)) {
+        return -10000.0;
+    }
+
     mMiddleSample = CMPLX(getInphase(halfDetectedSamplesPerSymbol), getQuadrature(halfDetectedSamplesPerSymbol));
-        
+    
     return mMiddleSample;
 }
 

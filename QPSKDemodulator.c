@@ -70,6 +70,10 @@ static Dibit calculateSymbol() {
     complex double middleSample = getCurrentSample();
     complex double currentSample = getMiddleSample();
 
+    if ((middleSample == -10000.0) || (currentSample == -10000.0)) {
+        return D99;
+    }
+
     // Differential decode middle and current symbols by calculating the angular rotation between the previous and
     // current samples (current sample x complex conjugate of previous sample).
     mMiddleSymbol = middleSample * conj(mPreviousMiddleSample);
