@@ -2,17 +2,40 @@
 
 #include <complex.h>
 #include <stdbool.h>
+#include <math.h>
+
+#define cmplx(value) (cosf(value) + sinf(value) * I)
+#define cmplxconj(value) (cosf(value) + sinf(value) * -I)
+
+#define ROTATE_FROM_PLUS_135  (-3.0 * M_PI / 4.0)
+#define ROTATE_FROM_PLUS_45   (-1.0 * M_PI / 4.0)
+#define ROTATE_FROM_MINUS_45  (1.0 * M_PI / 4.0)
+#define ROTATE_FROM_MINUS_135 (3.0 * M_PI / 4.0)
+
+typedef enum {
+    D01_PLUS_3 = 0b01,
+    D00_PLUS_1 = 0b00,
+    D10_MINUS_1 = 0b10,
+    D11_MINUS_3 = 0b11
+} Dibit;
 
 void create_interpolatingSampleBuffer(double, double);
-void receive(complex double);
+void interp_receive(complex double);
 void resetAndAdjust(double);
 
 double getSamplingPoint(void);
 
 bool hasSymbol(void);
 
-complex double sampleFilter(complex double [], int, double);
+complex double sampleFilter(complex double [], int, int, double);
 complex double getPrecedingSample(void);
 complex double getCurrentSample(void);
 complex double getMiddleSample(void);
+
+void create_symbolEvaluator(void);
+void setSymbols(complex double, complex double);
+double getPhaseError(void);
+double getTimingError(void);
+Dibit getSymbolDecision(void);
+
 

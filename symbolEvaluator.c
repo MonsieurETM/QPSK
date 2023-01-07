@@ -20,25 +20,13 @@
 #include <math.h>
 #include <complex.h>
 
-#define cmplx(value) (cosf(value) + sinf(value) * I)
-#define cmplxconj(value) (cosf(value) + sinf(value) * -I)
-
-#define ROTATE_FROM_PLUS_135  (-3.0 * M_PI / 4.0)
-#define ROTATE_FROM_PLUS_45   (-1.0 * M_PI / 4.0)
-#define ROTATE_FROM_MINUS_45  (1.0 * M_PI / 4.0)
-#define ROTATE_FROM_MINUS_135 (3.0 * M_PI / 4.0)
-
-typedef enum {
-    D01_PLUS_3 = 0b01,
-    D00_PLUS_1 = 0b00,
-    D10_MINUS_1 = 0b10,
-    D11_MINUS_3 = 0b11
-} Dibit;
+#include "interp.h"
 
 static double mPhaseError;
 static double mTimingError;
 
 static Dibit mSymbolDecision;
+
 static complex double mPreviousSymbol;
 static complex double mEvaluationSymbol;
 
@@ -60,7 +48,7 @@ void create_symbolEvaluator() {
     mPhaseError = 0.0;
     mTimingError = 0.0;
 
-    mSymbolDecision = D00_PLUS_1;
+    mSymbolDecision = D00;
 
     mPreviousSymbol = 0.0;
     mEvaluationSymbol = 0.0;
@@ -70,7 +58,7 @@ void create_symbolEvaluator() {
  * Constrains timing error to +/- the maximum value and corrects any
  * floating point invalid numbers
  */
-static double normalize(double error, double maximum) {
+static double enormalize(double error, double maximum) {
     if (isnan(error)) {
         return 0.0;
     }
@@ -118,18 +106,18 @@ void setSymbols(complex double middle, complex double current) {
 
     if (cimag(mEvaluationSymbol) > 0.0) {
         if (creal(mEvaluationSymbol) > 0.0) {
-            mSymbolDecision = D00_PLUS_1;
+            mSymbolDecision = D00;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_PLUS_45);
         } else {
-            mSymbolDecision = D01_PLUS_3;
+            mSymbolDecision = D01;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_PLUS_135);
         }
     } else {
         if (creal(mEvaluationSymbol) > 0.0) {
-            mSymbolDecision = D10_MINUS_1;
+            mSymbolDecision = D10;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_MINUS_45);
         } else {
-            mSymbolDecision = D11_MINUS_3;
+            mSymbolDecision = D11;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_MINUS_135);
         }
     }
@@ -140,7 +128,7 @@ void setSymbols(complex double middle, complex double current) {
      * the error angle, relative to 0 radians, and this
      * provides our error value
      */
-    mPhaseError = normalize(cimag(-mEvaluationSymbol), 0.3);
+    mPhaseError = enormalize(cimag(conj(mEvaluationSymbol)), 0.3);
 }
 
 /*
