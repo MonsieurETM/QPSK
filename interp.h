@@ -1,5 +1,10 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <complex.h>
 #include <stdbool.h>
 #include <math.h>
@@ -38,4 +43,10 @@ double getPhaseError(void);
 double getTimingError(void);
 Dibit getSymbolDecision(void);
 
+void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
+void demod_receive(complex double);
+
+#ifdef __cplusplus
+}
+#endif
 
