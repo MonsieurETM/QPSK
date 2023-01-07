@@ -20,11 +20,11 @@
 
 // Prototypes
 
-static void qpsk_demod(complex float, int []);
+static void qpsk_demod(complex double, int []);
 static void rx_frame(int16_t [], int []);
-static complex float qpsk_mod(int []);
-static int tx_frame(int16_t [], complex float [], int);
-static complex float qpsk_mod(int []);
+static complex double qpsk_mod(int []);
+static int tx_frame(int16_t [], complex double [], int);
+static complex double qpsk_mod(int []);
 static int qpsk_packet_mod(int16_t [], int [], int);
 
 // Globals
@@ -32,32 +32,32 @@ static int qpsk_packet_mod(int16_t [], int [], int);
 FILE *fin;
 FILE *fout;
 
-complex float tx_filter[NTAPS];
-complex float rx_filter[NTAPS];
+complex double tx_filter[NTAPS];
+complex double rx_filter[NTAPS];
 
-complex float input_frame[FRAME_SIZE];
-complex float decimated_frame[FRAME_SIZE / 2];
+complex double input_frame[FRAME_SIZE];
+complex double decimated_frame[FRAME_SIZE / 2];
 
 // Two phase for full duplex
 
-complex float fbb_tx_phase;
-complex float fbb_tx_rect;
+complex double fbb_tx_phase;
+complex double fbb_tx_rect;
 
-complex float fbb_rx_phase;
-complex float fbb_rx_rect;
+complex double fbb_rx_phase;
+complex double fbb_rx_rect;
 
-float fbb_offset_freq;
+double fbb_offset_freq;
 
-float d_error;
+double d_error;
 
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
  */
-const complex float constellation[] = {
-    1.0f + 0.0f * I, //  I
-    0.0f + 1.0f * I, //  Q
-    0.0f - 1.0f * I, // -Q
-    -1.0f + 0.0f * I // -I
+const complex double constellation[] = {
+    1.0 + 0.0 * I, //  I
+    0.0 + 1.0 * I, //  Q
+    0.0 - 1.0 * I, // -Q
+    -1.0 + 0.0 * I // -I
 };
 
 /*
@@ -69,16 +69,11 @@ const complex float constellation[] = {
  * 
  * Each bit pair differs from the next by only one bit.
  */
-static void qpsk_demod(complex float symbol, int bits[]) {
-    /*
-     * Don't rotate when costas loop enabled
-     */
-    if (get_costas_enable() == false) {
-        symbol *= cmplx(ROTATE45);
-    }
+static void qpsk_demod(complex double symbol, int bits[]) {
+    symbol *= cmplx(ROTATE45);
 
-    bits[0] = crealf(symbol) < 0.0f; // I < 0 ?
-    bits[1] = cimagf(symbol) < 0.0f; // Q < 0 ?
+    bits[0] = creal(symbol) < 0.0; // I < 0 ?
+    bits[1] = cimag(symbol) < 0.0; // Q < 0 ?
 }
 
 /*
@@ -89,11 +84,11 @@ static void qpsk_demod(complex float symbol, int bits[]) {
  * Remove any frequency and timing offsets
  */
 static void rx_frame(int16_t in[], int bits[]) {
-    float max_i = 0.0f;
-    float max_q = 0.0f;
+    double max_i = 0.0;
+    double max_q = 0.0;
 
-    float av_i = 0.0f;;
-    float av_q = 0.0f;
+    double av_i = 0.0;;
+    double av_q = 0.0;
 
     /*
      * You need as many histograms as you think
@@ -115,10 +110,10 @@ static void rx_frame(int16_t in[], int bits[]) {
     for (int i = 0; i < FRAME_SIZE; i++) {
         fbb_rx_phase *= fbb_rx_rect;
 
-        input_frame[i] = fbb_rx_phase * ((float) in[i] / 16384.0f);
+        input_frame[i] = fbb_rx_phase * ((double) in[i] / 16384.0f);
     }
 
-    fbb_rx_phase /= cabsf(fbb_rx_phase); // normalize as magnitude can drift
+    fbb_rx_phase /= cabs(fbb_rx_phase); // normalize as magnitude can drift
 
     /*
      * Raised Root Cosine Filter
@@ -131,8 +126,8 @@ static void rx_frame(int16_t in[], int bits[]) {
      */
     for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
         for (int j = 0; j < CYCLES; j++) {
-            av_i += fabsf(crealf(input_frame[i+j]));
-            av_q += fabsf(cimagf(input_frame[i+j]));
+            av_i += fabs(creal(input_frame[i+j]));
+            av_q += fabs(cimag(input_frame[i+j]));
         }
         
         av_i /= CYCLES;
@@ -149,8 +144,8 @@ static void rx_frame(int16_t in[], int bits[]) {
         /*
          * Create I/Q amplitude histograms
          */
-        float hv_i = (max_i / 8.0f);
-        float hv_q = (max_q / 8.0f);
+        float hv_i = (max_i / 8.0);
+        float hv_q = (max_q / 8.0);
     
         for (int k = 1; k < 8; k++) {
             if (av_i <= (hv_i * k)) {
@@ -193,7 +188,7 @@ static void rx_frame(int16_t in[], int bits[]) {
 
     for (int i = 0, j = 0; i < (FRAME_SIZE / CYCLES); i++, j += 2) {
 #ifdef TEST_SCATTER
-        fprintf(stderr, "%f %f\n", crealf(decimated_frame[i]), cimagf(decimated_frame[i]));
+        fprintf(stderr, "%f %f\n", creal(decimated_frame[i]), cimag(decimated_frame[i]));
 #endif
         qpsk_demod(decimated_frame[i], &bits[j]);
     }
@@ -201,7 +196,7 @@ static void rx_frame(int16_t in[], int bits[]) {
     /*
      * Save the detected frequency error
      */
-    fbb_offset_freq = (get_frequency() * RS / TAU);	// convert radians to freq at symbol rate
+    //fbb_offset_freq = (get_frequency() * RS / TAU);	// convert radians to freq at symbol rate
 }
 
 /*
@@ -209,8 +204,8 @@ static void rx_frame(int16_t in[], int bits[]) {
  * and translating the spectrum to 1500 Hz, where it is filtered
  * using the root raised cosine coefficients.
  */
-static int tx_frame(int16_t samples[], complex float symbol[], int length) {
-    complex float signal[(length * CYCLES)];
+static int tx_frame(int16_t samples[], complex double symbol[], int length) {
+    complex double signal[(length * CYCLES)];
 
     /*
      * Build the 2400 baud packet Frame zero padding
@@ -220,7 +215,7 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
         signal[(i * CYCLES)] = symbol[i];
 
         for (int j = 1; j < CYCLES; j++) {
-            signal[(i * CYCLES) + j] = 0.0f;
+            signal[(i * CYCLES) + j] = 0.0;
         }
     }
 
@@ -244,7 +239,7 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
      * (imaginary part discarded)
      */
     for (int i = 0; i < (length * CYCLES); i++) {
-        samples[i] = (int16_t) (crealf(signal[i]) * 16384.0f); // I at @ .5
+        samples[i] = (int16_t) (creal(signal[i]) * 16384.0); // I at @ .5
     }
 
     return (length * CYCLES);
@@ -253,12 +248,12 @@ static int tx_frame(int16_t samples[], complex float symbol[], int length) {
 /*
  * Gray coded QPSK modulation function
  */
-static complex float qpsk_mod(int bits[]) {
+static complex double qpsk_mod(int bits[]) {
     return constellation[(bits[1] << 1) | bits[0]];
 }
 
 static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length) {
-    complex float symbol[length];
+    complex double symbol[length];
     int dibit[2];
 
     for (int i = 0, s = 0; i < length; i++, s += 2) {
@@ -284,7 +279,7 @@ int main(int argc, char** argv) {
      * Create an RRC filter using the
      * Sample Rate, baud, and Alpha
      */
-    rrc_make(FS, RS, .35f);
+    rrc_make(FS, RS, .35);
 
     /*
      * create the QPSK data waveform.
@@ -292,7 +287,7 @@ int main(int argc, char** argv) {
      */
     fout = fopen(TX_FILENAME, "wb");
 
-    fbb_tx_phase = cmplx(0.0f);
+    fbb_tx_phase = cmplx(0.0);
     fbb_tx_rect = cmplx(TAU * CENTER / FS);
     fbb_offset_freq = CENTER;
 
@@ -317,7 +312,7 @@ int main(int argc, char** argv) {
      */
     fin = fopen(TX_FILENAME, "rb");
 
-    fbb_rx_phase = cmplx(0.0f);
+    fbb_rx_phase = cmplx(0.0);
     fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
 
     while (1) {

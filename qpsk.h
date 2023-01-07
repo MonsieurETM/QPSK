@@ -21,19 +21,12 @@ extern "C"
 
 #define FRAME_SIZE      512
 
-#define OS_48           6                   // oversampling rate
-#define OS_TAPS_48K     48                  // number of OS filter taps at 48 kHz
-#define OS_TAPS_48_8K   (OS_TAPS_48K/OS_48) // number of OS filter taps at 8 kHz
-
 #ifndef M_PI
 #define M_PI            3.14159265358979323846
 #endif
 
 #define TAU             (2.0 * M_PI)
 #define ROTATE45        (M_PI / 4.0)
-
-#define INTERPOLATION   0
-#define DECIMATION      1
 
 /*
  * This method is much faster than using cexp()
