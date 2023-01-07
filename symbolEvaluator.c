@@ -17,7 +17,6 @@
  * Translated from Java S. Sampson
  */
 
-#include <stdio.h>
 #include <math.h>
 #include <complex.h>
 

@@ -72,8 +72,8 @@ static Dibit calculateSymbol() {
 
     // Differential decode middle and current symbols by calculating the angular rotation between the previous and
     // current samples (current sample x complex conjugate of previous sample).
-    mMiddleSymbol = conj(middleSample * mPreviousMiddleSample);
-    mCurrentSymbol = conj(currentSample * mPreviousCurrentSample);
+    mMiddleSymbol = middleSample * conj(mPreviousMiddleSample);
+    mCurrentSymbol = currentSample * conj(mPreviousCurrentSample);
 
     // Set gain to unity before we calculate the error value
     mMiddleSymbol = cnormalize(mMiddleSymbol);
