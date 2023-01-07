@@ -13,10 +13,10 @@
 #define ROTATE_FROM_MINUS_135 (3.0 * M_PI / 4.0)
 
 typedef enum {
-    D01_PLUS_3 = 0b01,
-    D00_PLUS_1 = 0b00,
-    D10_MINUS_1 = 0b10,
-    D11_MINUS_3 = 0b11
+    D01 = 0b01,
+    D00 = 0b00,
+    D10 = 0b10,
+    D11 = 0b11
 } Dibit;
 
 void create_interpolatingSampleBuffer(double, double);
