@@ -22,8 +22,7 @@
 
 // Prototypes
 
-static void qpsk_demod(complex double, int []);
-static void rx_frame(int16_t [], int []);
+static void rx_frame(int16_t *, int []);
 static complex double qpsk_mod(int []);
 static int tx_frame(int16_t [], complex double [], int);
 static complex double qpsk_mod(int []);
@@ -36,9 +35,6 @@ FILE *fout;
 
 complex double tx_filter[NTAPS];
 complex double rx_filter[NTAPS];
-
-complex double input_frame[FRAME_SIZE];
-complex double decimated_frame[FRAME_SIZE / 2];
 
 // Two phase for full duplex
 
@@ -61,142 +57,39 @@ const complex double constellation[] = {
 };
 
 /*
- * Gray coded QPSK demodulation function
- *
- * By rotating received symbol 45 degrees the bits
- * are easier to decode as they are in a specific
- * rectangular quadrants.
- * 
- * Each bit pair differs from the next by only one bit.
- */
-static void qpsk_demod(complex double symbol, int bits[]) {
-    symbol *= cmplx(ROTATE45);
-
-    bits[0] = creal(symbol) < 0.0; // I < 0 ?
-    bits[1] = cimag(symbol) < 0.0; // Q < 0 ?
-}
-
-/*
  * Receive function
  * 
  * 2400 baud QPSK at 9600 samples/sec.
  *
  * Remove any frequency and timing offsets
  */
-static void rx_frame(int16_t in[], int bits[]) {
-    double max_i = 0.0;
-    double max_q = 0.0;
-
-    double av_i = 0.0;;
-    double av_q = 0.0;
-
-    /*
-     * You need as many histograms as you think
-     * you'll need for timing offset. Using 8 for now.
-     * First [0] index not used.
-     */
-    int hist_i[8] = { 0 };
-    int hist_q[8] = { 0 };
-    
-    int hmax = 0;
-    int index = 0;
-
-    int hist[8] = { 0 };
-
+static void rx_frame(int16_t *in, int bits[]) {
     /*
      * Convert input PCM to complex samples
-     * at 9600 Hz sample rate
+     * at 9600 Hz sample rate to baseband
      */
-    for (int i = 0; i < FRAME_SIZE; i++) {
-        fbb_rx_phase *= fbb_rx_rect;
+    fbb_rx_phase *= fbb_rx_rect;
 
-        input_frame[i] = fbb_rx_phase * ((double) in[i] / 16384.0f);
-    }
-
-    fbb_rx_phase /= cabs(fbb_rx_phase); // normalize as magnitude can drift
+    complex double sample = fbb_rx_phase * ((double) *in / 16384.0f);
 
     /*
      * Raised Root Cosine Filter
      */
-    rrc_fir(rx_filter, input_frame, FRAME_SIZE);
+    rrc_fir(rx_filter, &sample);
 
-    /*
-     * Find maximum absolute I/Q value for one symbol length
-     * after passing through the filter
-     */
-    for (int i = 0; i < FRAME_SIZE; i += CYCLES) {
-        for (int j = 0; j < CYCLES; j++) {
-            av_i += fabs(creal(input_frame[i+j]));
-            av_q += fabs(cimag(input_frame[i+j]));
-        }
-        
-        av_i /= CYCLES;
-        av_q /= CYCLES;
+    Dibit dbit = demod_receive(sample);
 
-        if (av_i > max_i) {
-            max_i = av_i;
-        }
-
-        if (av_q > max_q) {
-            max_q = av_q;
-        }
-
-        /*
-         * Create I/Q amplitude histograms
-         */
-        float hv_i = (max_i / 8.0);
-        float hv_q = (max_q / 8.0);
-    
-        for (int k = 1; k < 8; k++) {
-            if (av_i <= (hv_i * k)) {
-                hist_i[k] += 1;
-                break;
-            }
-        }
-
-        for (int k = 1; k < 8; k++) {
-            if (av_q <= (hv_q * k)) {
-                hist_q[k] += 1;
-                break;
-            }
-        }
-    }
-
-    /*
-     * Sum the I/Q histograms
-     * and ind the maximum value
-     */
-    for (int i = 0; i < 8; i++) {            
-        hist[i] = (hist_i[i] + hist_q[i]);
-
-        if (hist[i] > hmax) {
-            hmax = hist[i];
-            index = i;
-        }
-    }
-
-    /*
-     * Decimate by 4 to the 2400 symbol rate
-     * adjust for the timing error using index
-     */
-    for (int i = 0; i < (FRAME_SIZE / CYCLES); i++) {
-        int extended = (FRAME_SIZE / CYCLES) + i; // compute once
-        
-        decimated_frame[i] = decimated_frame[extended];			// use previous frame
-        decimated_frame[extended] = input_frame[(i * CYCLES) + index];	// current frame
-    }
-
-    for (int i = 0, j = 0; i < (FRAME_SIZE / CYCLES); i++, j += 2) {
+    if (dbit != D99) {
 #ifdef TEST_SCATTER
-        fprintf(stderr, "%f %f\n", creal(decimated_frame[i]), cimag(decimated_frame[i]));
+        fprintf(stderr, "%f %f\n", creal(sample), cimag(sample));
 #endif
-        qpsk_demod(decimated_frame[i], &bits[j]);
     }
 
     /*
      * Save the detected frequency error
      */
-    //fbb_offset_freq = (get_frequency() * RS / TAU);	// convert radians to freq at symbol rate
+    fbb_offset_freq = (getLoopFrequency() * RS / TAU);	// convert radians to freq at symbol rate
+    printf("%.2f ", fbb_offset_freq);
 }
 
 /*
@@ -222,7 +115,7 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length) {
     /*
      * Raised Root Cosine Filter
      */
-    rrc_fir(tx_filter, signal, (length * CYCLES));
+    rrc_fir_array(tx_filter, signal, (length * CYCLES));
 
     /*
      * Shift Baseband to Center Frequency
@@ -270,7 +163,7 @@ static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length) {
 
 int main(int argc, char** argv) {
     int bits[6400];
-    int16_t frame[FRAME_SIZE];
+    int16_t frame[1];
     int length;
 
     srand(time(0));
@@ -293,11 +186,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0);
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);
-    fbb_offset_freq = CENTER;
+    //fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    //fbb_offset_freq = CENTER;
 
-    //fbb_tx_rect = cmplx(TAU * (CENTER + 5.0) / FS);
-    //fbb_offset_freq = (CENTER + 5.0);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);
+    fbb_offset_freq = (CENTER + 50.0);
 
     for (int k = 0; k < 100; k++) {
         // 256 QPSK
@@ -324,9 +217,9 @@ int main(int argc, char** argv) {
         /*
          * Read in the frame samples
          */
-        size_t count = fread(frame, sizeof (int16_t), FRAME_SIZE, fin);
+        size_t count = fread(frame, sizeof (int16_t), 1, fin);
 
-        if (count != FRAME_SIZE)
+        if (count != 1)
             break;
 
         rx_frame(frame, bits);

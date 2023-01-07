@@ -45,16 +45,6 @@ void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
     mReceivedSample = 0.0;
 }
 
-static complex double cnormalize(complex double a) {
-    double mag = cabs(a);
-
-    if (mag != 0.0) {
-        return (a / mag);
-    } else {
-        return a;
-    }
-}
-
 /*
  * Note: the interpolating sample buffer holds 2 symbols worth of samples
  * and the current sample method points to the sample at the mid-point
@@ -65,8 +55,6 @@ static complex double cnormalize(complex double a) {
  * calculation, we'll treat the interpolating buffer's current sample as the
  * gardner mid-point and we'll treat the interpolating buffer's mid-point
  * sample as the current symbol sample (ie flip-flopped)
- *
- * @return 
  */
 static Dibit calculateSymbol() {
     complex double middleSample = getCurrentSample();
@@ -78,8 +66,8 @@ static Dibit calculateSymbol() {
     mCurrentSymbol *= conj(mPreviousCurrentSample);
 
     // Set gain to unity before we calculate the error value
-    cnormalize(mMiddleSymbol);
-    cnormalize(mCurrentSymbol);
+    mMiddleSymbol /= cabs(mMiddleSymbol);
+    mCurrentSymbol /= cabs(mCurrentSymbol);
 
     // Pass symbols to evaluator to determine timing and phase error and make symbol decision
     setSymbols(mMiddleSymbol, mCurrentSymbol);
@@ -101,7 +89,7 @@ static Dibit calculateSymbol() {
  * Processes a complex sample for decoding. Once sufficient samples are
  * buffered, a symbol decision is made.
  */
-void demod_receive(complex double sample) {
+Dibit demod_receive(complex double sample) {
     // Update current sample with values
     mReceivedSample = sample;
 
@@ -114,7 +102,9 @@ void demod_receive(complex double sample) {
 
     // Calculate the symbol once we've stored enough samples
     if (hasSymbol()) {
-        calculateSymbol();
+        return calculateSymbol();
     }
+
+    return D99;
 }
 

@@ -13,7 +13,23 @@ static double coeffs[NTAPS];
 /*
  * FIR Filter with specified impulse length
  */
-void rrc_fir(complex double memory[], complex double sample[], int length) {
+void rrc_fir(complex double memory[], complex double *sample) {
+    memmove(&memory[0], &memory[1], (NTAPS - 1) * sizeof (complex double));
+    memory[(NTAPS - 1)] = *sample;
+
+    complex double y = 0.0;
+
+    for (int i = 0; i < NTAPS; i++) {
+        y += (memory[i] * coeffs[i]);
+    }
+
+    *sample = y * GAIN;
+}
+
+/*
+ * FIR Filter with specified impulse length
+ */
+void rrc_fir_array(complex double memory[], complex double sample[], int length) {
     for (int j = 0; j < length; j++) {
         memmove(&memory[0], &memory[1], (NTAPS - 1) * sizeof (complex double));
         memory[(NTAPS - 1)] = sample[j];

@@ -25,7 +25,8 @@ typedef enum {
     D01 = 0b01,
     D00 = 0b00,
     D10 = 0b10,
-    D11 = 0b11
+    D11 = 0b11,
+    D99 = 99	// punt
 } Dibit;
 
 void create_interpolatingSampleBuffer(double, double);
@@ -48,7 +49,7 @@ double getTimingError(void);
 Dibit getSymbolDecision(void);
 
 void create_QPSKDemodulator(double, double);
-void demod_receive(complex double);
+Dibit demod_receive(complex double);
 
 #ifdef __cplusplus
 }
