@@ -49,7 +49,7 @@ double fbb_offset_freq;
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
  */
-const complex double constellation[] = {
+static const complex double constellation[] = {
     1.0 + 0.0 * I, //  I
     0.0 + 1.0 * I, //  Q
     0.0 - 1.0 * I, // -Q
@@ -89,7 +89,6 @@ static void rx_frame(int16_t *in, int bits[]) {
      * Save the detected frequency error
      */
     fbb_offset_freq = (getLoopFrequency() * RS / TAU);	// convert radians to freq at symbol rate
-    printf("%.2f ", fbb_offset_freq);
 }
 
 /*

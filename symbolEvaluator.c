@@ -17,6 +17,7 @@
  * Translated from Java S. Sampson
  */
 
+#include <stdio.h>
 #include <math.h>
 #include <complex.h>
 
@@ -129,7 +130,7 @@ void setSymbols(complex double middle, complex double current) {
      * the error angle, relative to 0 radians, and this
      * provides our error value
      */
-    mPhaseError = enormalize(cimag(conj(mEvaluationSymbol)), 0.3);
+    mPhaseError = enormalize(-cimag(mEvaluationSymbol), 0.3);
 }
 
 /*

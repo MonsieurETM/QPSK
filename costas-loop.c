@@ -45,8 +45,8 @@ static void updateLoopBandwidth(void);
  * incoming carrier frequency in order to zeroize any frequency offset inherent
  * in the signal due to either mis-tuning or carrier frequency drift.
  *
- * @param sampleRate of the incoming samples (25000 in PSK)
- * @param symbolRate of the digital signal (4800 in PSK)
+ * @param sampleRate of the incoming samples
+ * @param symbolRate of the digital signal
  *
  * Note: Bandwidth set below to PLLBandwidth.BW_200 in PSK
  */

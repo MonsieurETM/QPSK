@@ -45,6 +45,16 @@ void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
     mReceivedSample = 0.0;
 }
 
+static complex double cnormalize(complex double a) {
+    double mag = cabs(a);
+
+    if (mag != 0.0) {
+        return a / mag;
+    } else {
+        return a;
+    }
+}
+
 /*
  * Note: the interpolating sample buffer holds 2 symbols worth of samples
  * and the current sample method points to the sample at the mid-point
@@ -62,12 +72,12 @@ static Dibit calculateSymbol() {
 
     // Differential decode middle and current symbols by calculating the angular rotation between the previous and
     // current samples (current sample x complex conjugate of previous sample).
-    mMiddleSymbol *= conj(mPreviousMiddleSample);
-    mCurrentSymbol *= conj(mPreviousCurrentSample);
+    mMiddleSymbol = conj(middleSample * mPreviousMiddleSample);
+    mCurrentSymbol = conj(currentSample * mPreviousCurrentSample);
 
     // Set gain to unity before we calculate the error value
-    mMiddleSymbol /= cabs(mMiddleSymbol);
-    mCurrentSymbol /= cabs(mCurrentSymbol);
+    mMiddleSymbol = cnormalize(mMiddleSymbol);
+    mCurrentSymbol = cnormalize(mCurrentSymbol);
 
     // Pass symbols to evaluator to determine timing and phase error and make symbol decision
     setSymbols(mMiddleSymbol, mCurrentSymbol);
@@ -90,12 +100,9 @@ static Dibit calculateSymbol() {
  * buffered, a symbol decision is made.
  */
 Dibit demod_receive(complex double sample) {
-    // Update current sample with values
-    mReceivedSample = sample;
-
-    // Mix current sample with costas loop to remove any rotation
-    // that is present from a mis-tuned carrier frequency
-    mReceivedSample *= incrementAndGetCurrentVector();
+    // Update current sample and Mix with costas loop
+    // to remove any rotation from frequency error
+    mReceivedSample = sample * incrementAndGetCurrentVector();
 
     // Store the sample in the interpolating buffer
     interp_receive(mReceivedSample);

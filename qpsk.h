@@ -13,9 +13,9 @@ extern "C"
 
 #define TX_FILENAME "/tmp/spectrum.raw"
 
-#define FS              25000.0
-#define RS              4800.0
-#define CENTER          3500.0
+#define FS              9600.0
+#define RS              2400.0
+#define CENTER          1500.0
 
 #define CYCLES          (int) (FS / RS)
 
