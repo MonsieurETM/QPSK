@@ -28,11 +28,8 @@ static complex double mCurrentSymbol;
 static complex double mReceivedSample;
 
 /*
- * Implements a Differential QPSK demodulator using a Costas Loop (PLL) and
+ * Implements a Differential QPSK demodulator using a Costas Loop and
  * a Gardner timing error detector.
- *
- * @param phaseLockedLoop for tracking carrier frequency error
- * @param interpolatingSampleBuffer hold samples for interpolating a symbol
  */
 void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
     create_symbolEvaluator();
@@ -87,7 +84,7 @@ static Dibit calculateSymbol() {
     // Update symbol timing error in Interpolator
     resetAndAdjust(getTimingError());
 
-    // Update PLL phase error
+    // Update Costas phase error
     costas_adjust(getPhaseError());
 
     // Store current samples/symbols for next symbol calculation
@@ -100,9 +97,6 @@ static Dibit calculateSymbol() {
 /*
  * Processes a complex sample for decoding. Once sufficient samples are
  * buffered, a symbol decision is made.
- *
- * @param inphase value for the I sample
- * @param quadrature value for the Q sample
  */
 void demod_receive(complex double sample) {
     // Update current sample with values
