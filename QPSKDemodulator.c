@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 Dennis Sheirer
+ * Copyright (C) 2002,2012 Free Software Foundation, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
