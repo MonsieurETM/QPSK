@@ -1,7 +1,7 @@
 #### QPSK - An Experimental QPSK Packet Data Modem
 This project is to design a modem which does not require a preamble, or a Unique Word (UW) in order to synchronize the timing. There may be a sync word as part of a protocol, but not for timing. I'm interested in making it work for QPSK 2400 Baud VHF/UHF band. This is an alternative to FM modems.
 
-I've ported some code that is using 25 kHz sampling at 4800 Baud, so you can use audacity to listen to and view the spectrum. I also dropped the ```spectrum.wav``` file in the repository to see where I'm at so far.
+I've ported some code that is using 25 kHz sampling at 4800 Baud, so you can use ```audacity``` to listen to and view the spectrum. I also dropped the ```spectrum.wav``` file in the repository to see where I'm at so far. This is just random bits being modulated.
 
 At this stage my timing estimation code is still very noisy. I'm using code taken from ```sdrtrunk``` and still debugging.
 
