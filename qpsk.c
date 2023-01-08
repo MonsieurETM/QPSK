@@ -61,7 +61,7 @@ static const complex double constellation[] = {
     0.0 + 1.0 * I, //  North
    -1.0 + 0.0 * I, //  West
     1.0 + 0.0 * I, //  East
-    0.0 - 1.0 * I //  South
+    0.0 - 1.0 * I  //  South
 };
 /*
  * Receive function
@@ -201,11 +201,11 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0);
-    fbb_tx_rect = cmplx(TAU * CENTER / FS);
-    fbb_offset_freq = CENTER;
+    //fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    //fbb_offset_freq = CENTER;
 
-    //fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);
-    //fbb_offset_freq = (CENTER + 50.0);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);
+    fbb_offset_freq = (CENTER + 50.0);
 
     for (int k = 0; k < 2000; k++) {
         // 256 QPSK
