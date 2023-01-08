@@ -1,189 +1,158 @@
 /*
- * Copyright (C) 2015 Dennis Sheirer
+ * Copyright 2006,2011,2012,2014 Free Software Foundation, Inc.
+ * Author: Tom Rondeau, 2011
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Converted to C by Steve Sampson
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Translated from Java by S. Sampson
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
- 
-#include <stdlib.h>
+
 #include <complex.h>
 #include <math.h>
-#include <stdbool.h>
 
-#include "interp.h"
 #include "qpsk.h"
 #include "costas-loop.h"
 
-static complex double mCurrentVector;
+static double d_phase;
+static double d_freq;
 
-static double mLoopPhase;
-static double mLoopFrequency;
-static double mAlphaGain;
-static double mBetaGain;
+static double d_max_freq;
+static double d_min_freq;
 
-static double mMaximumLoopFrequency;
-static double mDamping;
+static double d_damping;
+static double d_loop_bw;
 
-static PLLBandwidth mPLLBandwidth;
-
-static void updateLoopBandwidth(void);
+static double d_alpha;
+static double d_beta;
 
 /*
- * Costas Loop - phase locked loop designed to automatically synchronize to the
- * incoming carrier frequency in order to zeroize any frequency offset inherent
- * in the signal due to either mis-tuning or carrier frequency drift.
+ * A Costas loop carrier recovery algorithm.
  *
- * @param sampleRate of the incoming samples
- * @param symbolRate of the digital signal
- *
- * Note: Bandwidth set below to PLLBandwidth.BW_200 in PSK
+ * The Costas loop locks to the center frequency of a signal and
+ * downconverts signal to baseband.
  */
-void create_costasLoop(double sampleRate, double symbolRate) {
-    mCurrentVector = 0.0;
-    mMaximumLoopFrequency = TAU * (symbolRate / 2.0) / sampleRate;
-    mPLLBandwidth = BW_200;
-    mDamping = sqrt(2.0) / 2.0;
-    mLoopFrequency = 0.0;
-    mLoopPhase = 0.0;
+void create_control_loop(double loop_bw, double min_freq, double max_freq) {
+    set_phase(0.);
+    set_frequency(0.);
 
-    updateLoopBandwidth();
+    set_max_freq(max_freq);
+    set_min_freq(min_freq);
+
+    set_damping_factor(sqrt(2.) / 2.);
+
+    // Calls update_gains() which sets alpha and beta
+    set_loop_bandwidth(loop_bw);
 }
 
-/*
- * Corrects the current phase tracker when an inverted output is detected.
- * The inversion will take the form of +/- 90 degrees or +/- 180 degrees,
- * although the latter correction is equal regardless of the sign.
- *
- * If the supplied correction value places the loop frequency outside of the
- * max frequency, then the frequency will be corrected 360 degrees in the
- * opposite direction to maintain within the max frequency bounds.
- *
- * @param correction as measured in radians
- */
-void correctInversion(double correction) {
-    mLoopFrequency += correction;
+double phase_detector(complex double sample) {
+    return ((creal(sample) > 0. ? 1. : -1.) * cimag(sample) -
+            (cimag(sample) > 0. ? 1. : -1.) * creal(sample));
+}
 
-    while (mLoopFrequency > mMaximumLoopFrequency) {
-        mLoopFrequency -= (2.0 * mMaximumLoopFrequency);
+void update_gains() {
+    double denom = ((1. + (2. * d_damping * d_loop_bw)) + (d_loop_bw * d_loop_bw));
+
+    d_alpha = (4. * d_damping * d_loop_bw) / denom;
+    d_beta = (4. * d_loop_bw * d_loop_bw) / denom;
+}
+
+void advance_loop(double error) {
+    d_freq = d_freq + d_beta * error;
+    d_phase = d_phase + d_freq + d_alpha * error;
+}
+
+void phase_wrap() {
+    while (d_phase > TAU)
+        d_phase -= TAU;
+
+    while (d_phase < -TAU)
+        d_phase += TAU;
+}
+
+void frequency_limit() {
+    if (d_freq > d_max_freq)
+        d_freq = d_max_freq;
+    else if (d_freq < d_min_freq)
+        d_freq = d_min_freq;
+}
+
+
+// Setters
+
+void set_loop_bandwidth(double bw)
+{
+    if (bw < 0.) {
+        d_loop_bw = 0.;
     }
 
-    while (mLoopFrequency < -mMaximumLoopFrequency) {
-        mLoopFrequency += (2.0 * mMaximumLoopFrequency);
-    }
+    d_loop_bw = bw;
+    update_gains();
 }
 
-/*
- * Updates the loop bandwidth and alpha/beta gains according to the current
- * loop synchronization state.
- */
-static void updateLoopBandwidth() {
-    double bandwidth = TAU / (double) mPLLBandwidth;
-
-    mAlphaGain = (4.0 * mDamping * bandwidth) / (1.0 + (2.0 * mDamping * bandwidth) + (bandwidth * bandwidth));
-    mBetaGain = (4.0 * bandwidth * bandwidth) / (1.0 + (2.0 * mDamping * bandwidth) + (bandwidth * bandwidth));
-}
-
-/*
- * Sets the PLLBandwidth state for this costas loop. The bandwidth affects
- * the aggressiveness of the alpha/beta gain values in synchronizing with
- * the signal carrier.
- *
- * @param pllBandwidth set to PLLBandwidth.BW_200 in PSK
- */
-void setPLLBandwidth(PLLBandwidth pllBandwidth) {
-    if (mPLLBandwidth != pllBandwidth) {
-        mPLLBandwidth = pllBandwidth;
-
-        updateLoopBandwidth();
-    }
-}
-
-/*
- * Increments the phase of the loop for each sample received at the sample
- * rate.
- */
-void increment() {
-    mLoopPhase += mLoopFrequency;
-
-    /* Normalize phase between +/- TAU */
-    if (mLoopPhase > TAU) {
-        mLoopPhase -= TAU;
+void set_damping_factor(double df)
+{
+    if (df <= 0.) {
+        d_damping = 0.;
     }
 
-    if (mLoopPhase < -TAU) {
-        mLoopPhase += TAU;
-    }
+    d_damping = df;
+    update_gains();
 }
 
-/*
- * Current vector of the loop.
- *
- * Note: this value is updated for the current angle
- * in radians each time this method is invoked.
- * @return 
- */
-complex double getCurrentVector() {
-    mCurrentVector = cmplx(mLoopPhase);
-
-    return mCurrentVector;
-}
-
-complex double incrementAndGetCurrentVector() {
-    increment();
-
-    return getCurrentVector();
-}
-
-double getLoopFrequency() {
-    return mLoopFrequency;
-}
-
-/*
- * Updates the costas loop frequency and phase to adjust for the phase error
- * value
- *
- * @param phaseError - (-)= late and (+)= early
- */
-void costas_adjust(double phaseError) {
-    mLoopFrequency += (mBetaGain * phaseError);
-    mLoopPhase += mLoopFrequency + (mAlphaGain * phaseError);
-
-    // Normalize phase between +/- TAU
-    if (mLoopPhase > TAU) {
-        mLoopPhase -= TAU;
+void set_alpha(double alpha)
+{
+    if (alpha < 0. || alpha > 1.) {
+        d_alpha = 0.;
     }
 
-    if (mLoopPhase < -TAU) {
-        mLoopPhase += TAU;
-    }
-
-    // Limit frequency to +/- maximum loop frequency
-    if (mLoopFrequency > mMaximumLoopFrequency) {
-        mLoopFrequency = mMaximumLoopFrequency;
-    }
-
-    if (mLoopFrequency < -mMaximumLoopFrequency) {
-        mLoopFrequency = -mMaximumLoopFrequency;
-    }
+    d_alpha = alpha;
 }
 
-/*
- * Resets the PLL internal tracking values
- */
-void costas_reset() {
-    mLoopPhase = 0.0;
-    mLoopFrequency = 0.0;
+void set_beta(double beta)
+{
+    if (beta < 0. || beta > 1.) {
+        d_beta = 0.;
+    }
+
+    d_beta = beta;
 }
+
+void set_frequency(double freq)
+{
+    if (freq > d_max_freq)
+        d_freq = d_max_freq;
+    else if (freq < d_min_freq)
+        d_freq = d_min_freq;
+    else
+        d_freq = freq;
+}
+
+void set_phase(double phase)
+{
+    d_phase = phase;
+
+    phase_wrap();
+}
+
+void set_max_freq(double freq) { d_max_freq = freq; }
+
+void set_min_freq(double freq) { d_min_freq = freq; }
+
+// Getters
+
+double get_loop_bandwidth() { return d_loop_bw; }
+
+double get_damping_factor() { return d_damping; }
+
+double get_alpha() { return d_alpha; }
+
+double get_beta() { return d_beta; }
+
+double get_frequency() { return d_freq; }
+
+double get_phase() { return d_phase; }
+
+double get_max_freq() { return d_max_freq; }
+
+double get_min_freq() { return d_min_freq; }
 

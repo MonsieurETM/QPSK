@@ -16,9 +16,9 @@
 #include <math.h>
 
 #include "qpsk.h"
+#include "costas-loop.h"
 #include "rrc_fir.h"
 #include "interp.h"
-#include "costas-loop.h"
 
 // Prototypes
 
@@ -48,14 +48,21 @@ double fbb_offset_freq;
 
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
- */
+ *
+ * 00 is east
+ *
 static const complex double constellation[] = {
-    1.0 + 0.0 * I, //  I
-    0.0 + 1.0 * I, //  Q
-    0.0 - 1.0 * I, // -Q
-    -1.0 + 0.0 * I // -I
+    1.0 + 0.0 * I, //  East
+    0.0 + 1.0 * I, //  North
+    0.0 - 1.0 * I, //  South
+   -1.0 + 0.0 * I  //  West
+};*/
+static const complex double constellation[] = {
+    0.0 + 1.0 * I, //  North
+   -1.0 + 0.0 * I, //  West
+    1.0 + 0.0 * I, //  East
+    0.0 - 1.0 * I //  South
 };
-
 /*
  * Receive function
  * 
@@ -80,15 +87,17 @@ static void rx_frame(int16_t *in, int bits[]) {
     Dibit dbit = demod_receive(sample);
 
     if (dbit != D99) {
+        complex double val = getReceivedSample();
 #ifdef TEST_SCATTER
-        fprintf(stderr, "%f %f\n", creal(sample), cimag(sample));
+        fprintf(stderr, "%f %f\n", creal(val), cimag(val));
 #endif
     }
 
     /*
      * Save the detected frequency error
      */
-    fbb_offset_freq = (getLoopFrequency() * RS / TAU);	// convert radians to freq at symbol rate
+    fbb_offset_freq = (get_frequency() * RS / TAU);	// convert radians to freq at symbol rate
+    //printf("%.2f ", fbb_offset_freq);
 }
 
 /*
@@ -131,7 +140,8 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length) {
      * (imaginary part discarded)
      */
     for (int i = 0; i < (length * CYCLES); i++) {
-        samples[i] = (int16_t) (creal(signal[i]) * 16384.0); // I at @ .5
+        complex double val = signal[i] * 16384.0;
+        samples[i] = (int16_t) (creal(val) + cimag(val)); // @ .5
     }
 
     return (length * CYCLES);
@@ -167,9 +177,15 @@ int main(int argc, char** argv) {
 
     srand(time(0));
 
-    create_costasLoop(FS, RS);
-    double samplesPerSymbol = FS / RS;
+    /*
+     * All terms are radians per sample.
+     *
+     * The loop bandwidth determins the lock range
+     * and should be set around TAU/100 to TAU/200
+     */
+    create_control_loop((TAU / 200.), -1., 1.);
 
+    double samplesPerSymbol = FS / RS;
     create_QPSKDemodulator(samplesPerSymbol, 0.1);
 
     /*
@@ -191,7 +207,7 @@ int main(int argc, char** argv) {
     //fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);
     //fbb_offset_freq = (CENTER + 50.0);
 
-    for (int k = 0; k < 100; k++) {
+    for (int k = 0; k < 2000; k++) {
         // 256 QPSK
         for (int i = 0; i < FRAME_SIZE; i++) {
             bits[i] = rand() % 2;

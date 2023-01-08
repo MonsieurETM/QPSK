@@ -1,3 +1,9 @@
+/*
+ * Copyright 2006,2011,2012,2014 Free Software Foundation, Inc.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 #pragma once
 
 #ifdef __cplusplus
@@ -5,25 +11,36 @@ extern "C"
 {
 #endif
 
-typedef enum {
-    BW_400 = 400,
-    BW_300 = 300,
-    BW_250 = 250,
-    BW_200 = 200
-} PLLBandwidth;
+#include <complex.h>
 
-void create_costasLoop(double, double);
-void correctInversion(double);
-void setPLLBandwidth(PLLBandwidth);
-void increment(void);
+void create_control_loop(double, double, double);
+void update_gains(void);
+void advance_loop(double);
+void phase_wrap(void);
+void frequency_limit(void);
+double phase_detector(complex double);
 
-complex double getCurrentVector(void);
-complex double incrementAndGetCurrentVector(void);
+// Setters
 
-double getLoopFrequency(void);
+void set_loop_bandwidth(double);
+void set_damping_factor(double);
+void set_alpha(double);
+void set_beta(double);
+void set_frequency(double);
+void set_phase(double);
+void set_max_freq(double);
+void set_min_freq(double);
 
-void costas_adjust(double);
-void costas_reset(void);
+// Getters
+
+double get_loop_bandwidth(void);
+double get_damping_factor(void);
+double get_alpha(void);
+double get_beta(void);
+double get_frequency(void);
+double get_phase(void);
+double get_max_freq(void);
+double get_min_freq(void);
 
 #ifdef __cplusplus
 }

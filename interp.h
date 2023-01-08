@@ -16,10 +16,10 @@ extern "C"
 
 #define TAU             (2.0 * M_PI)
 
-#define ROTATE_FROM_PLUS_135  (-3.0 * M_PI / 4.0)
-#define ROTATE_FROM_PLUS_45   (-1.0 * M_PI / 4.0)
-#define ROTATE_FROM_MINUS_45  (1.0 * M_PI / 4.0)
-#define ROTATE_FROM_MINUS_135 (3.0 * M_PI / 4.0)
+#define ROTATE_FROM_PLUS_135  (-3.0 * (M_PI / 4.0))
+#define ROTATE_FROM_PLUS_45   (-1.0 * (M_PI / 4.0))
+#define ROTATE_FROM_MINUS_45  (1.0 * (M_PI / 4.0))
+#define ROTATE_FROM_MINUS_135 (3.0 * (M_PI / 4.0))
 
 typedef enum {
     D01 = 0b01,
@@ -46,6 +46,7 @@ void setSymbols(complex double, complex double);
 double getPhaseError(void);
 double getTimingError(void);
 Dibit getSymbolDecision(void);
+complex double getReceivedSample(void);
 
 void create_QPSKDemodulator(double, double);
 Dibit demod_receive(complex double);

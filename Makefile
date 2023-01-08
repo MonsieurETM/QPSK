@@ -9,5 +9,5 @@ qpsk: ${SRC} ${HEADER}
 # generate scatter diagram PNG
 test_scatter: qpsk
 	./qpsk 2>scatter.txt
-	DISPLAY="" octave-cli -qf --eval "load scatter.txt; plot(scatter(1000:2000,1),scatter(1000:2000,2),'.'); print('scatter.png','-dpng')"
+	DISPLAY="" octave-cli -qf --eval "load scatter.txt; plot(scatter(500:2000,1),scatter(500:2000,2),'.'); print('scatter.png','-dpng')"
   

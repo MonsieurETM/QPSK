@@ -21,6 +21,7 @@
 #include <complex.h>
 #include <math.h>
 
+#include "qpsk.h"
 #include "interp.h"
 #include "costas-loop.h"
 
@@ -89,8 +90,12 @@ static Dibit calculateSymbol() {
     // Update symbol timing error in Interpolator
     resetAndAdjust(getTimingError());
 
-    // Update Costas phase error
-    costas_adjust(getPhaseError());
+    // Update Costas phase error from symbolEvaluator
+    double d_error = phase_detector(mReceivedSample);
+
+    advance_loop(d_error);
+    phase_wrap();
+    frequency_limit();
 
     // Store current samples/symbols for next symbol calculation
     mPreviousMiddleSample = middleSample;
@@ -106,7 +111,7 @@ static Dibit calculateSymbol() {
 Dibit demod_receive(complex double sample) {
     // Update current sample and Mix with costas loop
     // to remove any rotation from frequency error
-    mReceivedSample = sample * incrementAndGetCurrentVector();
+    mReceivedSample = sample * cmplxconj(get_phase());
 
     // Store the sample in the interpolating buffer
     interp_receive(mReceivedSample);
@@ -117,5 +122,9 @@ Dibit demod_receive(complex double sample) {
     }
 
     return D99;
+}
+
+complex double getReceivedSample() {
+    return mReceivedSample;
 }
 
