@@ -3,7 +3,7 @@ This project is to design a modem which does not require a preamble, or a Unique
 
 I've ported some code that is using 25 kHz sampling at 4800 Baud, so you can use audacity to listen to and view the spectrum. I also dropped the ```spectrum.wav``` file in the repository to see where I'm at so far.
 
-At this stage my timing estimation code is still failing.  I'm experimenting with code taken from ```sdrtrunk``` and still have a few bugs to work out.
+At this stage my timing estimation code is still very noisy. I'm using code taken from ```sdrtrunk``` and still debugging.
 
 There also needs to be a frequency error adjustment. Not so much for fixed radio sites, as they don't move, but when mobile, of course, will have a varying Doppler shift to be corrected. So I ported the GNU Radio Costas loop C++ code to C and merged that with the receiver code.
 
