@@ -9,5 +9,5 @@ There also needs to be a frequency error adjustment. Not so much for fixed radio
 
 To compile and make the ```qpsk``` binary, just type ```make``` or if you want to see the scatter diagram graphic ```make test_scatter```
 
-There's a ```scatter.png``` to show where I'm at as far as timing estimation is concerned. The costas does detect the correct frequency error, but my scatter plot doesn't seem to plot correctly.
+There's a ```scatter.png``` to show where I'm at as far as timing estimation is concerned. The costas does detect the correct frequency error and the scatter plot does seem to plot correctly, but is very noisy.
 
