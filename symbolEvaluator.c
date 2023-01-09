@@ -45,7 +45,8 @@ static complex double mEvaluationSymbol;
  * previous symbol to the current symbol and amplifying the delta between
  * the two using the intra-symbol sample to form the timing error.
  */
-void create_symbolEvaluator() {
+void create_symbolEvaluator()
+{
     mPhaseError = 0.0;
     mTimingError = 0.0;
 
@@ -59,16 +60,21 @@ void create_symbolEvaluator() {
  * Constrains timing error to +/- the maximum value and corrects any
  * floating point invalid numbers
  */
-static double enormalize(double error, double maximum) {
-    if (isnan(error)) {
+static double enormalize(double error, double maximum)
+{
+    if (isnan(error))
+    {
         return 0.0;
     }
 
     // clip - Constrains value to the range of ( -maximum <> maximum )
 
-    if (error > maximum) {
+    if (error > maximum)
+    {
         return maximum;
-    } else if (error < -maximum) {
+    }
+    else if (error < -maximum)
+    {
         return -maximum;
     }
 
@@ -92,7 +98,8 @@ static double enormalize(double error, double maximum) {
  * midway between previous/current symbols
  * @param current interpolated differentially-decoded symbol
  */
-void setSymbols(complex double middle, complex double current) {
+void setSymbols(complex double middle, complex double current)
+{
     // Gardner timing error calculation
     double errorInphase = (creal(mPreviousSymbol) - creal(current)) * creal(middle);
     double errorQuadrature = (cimag(mPreviousSymbol) - cimag(current)) * cimag(middle);
@@ -105,19 +112,28 @@ void setSymbols(complex double middle, complex double current) {
     // Phase error and symbol decision calculations ...
     mEvaluationSymbol = current;
 
-    if (cimag(mEvaluationSymbol) > 0.0) {
-        if (creal(mEvaluationSymbol) > 0.0) {
+    if (cimag(mEvaluationSymbol) > 0.0)
+    {
+        if (creal(mEvaluationSymbol) > 0.0)
+        {
             mSymbolDecision = D00;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_PLUS_45);
-        } else {
+        }
+        else
+        {
             mSymbolDecision = D01;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_PLUS_135);
         }
-    } else {
-        if (creal(mEvaluationSymbol) > 0.0) {
+    }
+    else
+    {
+        if (creal(mEvaluationSymbol) > 0.0)
+        {
             mSymbolDecision = D10;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_MINUS_45);
-        } else {
+        }
+        else
+        {
             mSymbolDecision = D11;
             mEvaluationSymbol *= cmplx(ROTATE_FROM_MINUS_135);
         }
@@ -137,17 +153,19 @@ void setSymbols(complex double middle, complex double current) {
  *
  * @return phase error in radians of distance from the reference symbol.
  */
-double getPhaseError() {
+double getPhaseError()
+{
     return mPhaseError;
 }
 
 /*
  * Reference symbol that is closest to the transmitted/sampled symbol.
- * @return 
+ * @return
  */
-Dibit getSymbolDecision() {
+Dibit getSymbolDecision()
+{
     return mSymbolDecision;
-} 
+}
 
 /*
  * Timing error of the symbol relative to the nearest reference symbol.
@@ -158,7 +176,7 @@ Dibit getSymbolDecision() {
  * if the symbol was sampled early (-) or late (+) relative to the reference
  * symbol.
  */
-double getTimingError() {
+double getTimingError()
+{
     return mTimingError;
 }
-

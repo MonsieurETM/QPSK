@@ -1,7 +1,7 @@
 /*
  * qpsk.c
  *
- * Testing program for qpsk modem algorithms, November 2022
+ * Testing program for qpsk modem algorithms, January 2023
  */
 
 // Includes
@@ -22,11 +22,11 @@
 
 // Prototypes
 
-static void rx_frame(int16_t *, int []);
-static complex double qpsk_mod(int []);
-static int tx_frame(int16_t [], complex double [], int);
-static complex double qpsk_mod(int []);
-static int qpsk_packet_mod(int16_t [], int [], int);
+static void rx_frame(int16_t *, int[]);
+static complex double qpsk_mod(int[]);
+static int tx_frame(int16_t[], complex double[], int);
+static complex double qpsk_mod(int[]);
+static int qpsk_packet_mod(int16_t[], int[], int);
 
 // Globals
 
@@ -55,7 +55,7 @@ static const complex double constellation[] = {
     1.0 + 0.0 * I, //  East
     0.0 + 1.0 * I, //  North
     0.0 - 1.0 * I, //  South
-   -1.0 + 0.0 * I  //  West
+    -1.0 + 0.0 * I //  West
 };
 
 /*
@@ -73,19 +73,20 @@ static const complex double constellation[] = {
 
 /*
  * Receive function
- * 
+ *
  * 2400 baud QPSK at 9600 samples/sec.
  *
  * Remove any frequency and timing offsets
  */
-static void rx_frame(int16_t *in, int bits[]) {
+static void rx_frame(int16_t *in, int bits[])
+{
     /*
      * Convert input PCM to complex samples
-     * at 9600 Hz sample rate to baseband
+     * to baseband
      */
     fbb_rx_phase *= fbb_rx_rect;
 
-    complex double sample = fbb_rx_phase * ((double) *in / 16384.0f);
+    complex double sample = fbb_rx_phase * ((double)*in / 16384.0f);
 
     /*
      * Raised Root Cosine Filter
@@ -94,8 +95,9 @@ static void rx_frame(int16_t *in, int bits[]) {
 
     Dibit dbit = demod_receive(sample);
 
-    if (dbit != D99) {
-        complex double val = getReceivedSample();	// Costas compensated
+    if (dbit != D99)
+    {
+        complex double val = getReceivedSample(); // Costas compensated
 #ifdef TEST_SCATTER
         fprintf(stderr, "%f %f\n", creal(val), cimag(val));
 #endif
@@ -104,26 +106,27 @@ static void rx_frame(int16_t *in, int bits[]) {
     /*
      * Save the detected frequency error
      */
-    fbb_offset_freq = (get_frequency() * RS / TAU);	// convert radians to freq at symbol rate
-    //printf("%.2f ", fbb_offset_freq);
+    fbb_offset_freq = (get_frequency() * RS / TAU); // convert radians to freq at symbol rate
+    // printf("%.2f ", fbb_offset_freq);
 }
 
 /*
- * Modulate the symbols by first upsampling and translating
- * the spectrum to selected center frequency, where it is then
- * filtered using the root raised cosine coefficients.
+ * Modulate the symbols by first upsampling, then RRC filtering.
  */
-static int tx_frame(int16_t samples[], complex double symbol[], int length) {
+static int tx_frame(int16_t samples[], complex double symbol[], int length)
+{
     complex double signal[(length * CYCLES)];
 
     /*
-     * Build the baseband packet Frame zero padding
-     * for the desired sample rate.
+     * Build the baseband packet Frame by zero padding
+     * to the desired sample rate.
      */
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < length; i++)
+    {
         signal[(i * CYCLES)] = symbol[i];
 
-        for (int j = 1; j < CYCLES; j++) {
+        for (int j = 1; j < CYCLES; j++)
+        {
             signal[(i * CYCLES) + j] = 0.0;
         }
     }
@@ -136,7 +139,8 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length) {
     /*
      * Shift Baseband to Center Frequency
      */
-    for (int i = 0; i < (length * CYCLES); i++) {
+    for (int i = 0; i < (length * CYCLES); i++)
+    {
         fbb_tx_phase *= fbb_tx_rect;
         signal[i] *= fbb_tx_phase;
     }
@@ -144,11 +148,11 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length) {
     fbb_tx_phase /= cabsf(fbb_tx_phase); // normalize as magnitude can drift
 
     /*
-     * Now return the resulting real samples
-     * (imaginary part discarded)
+     * Now return the resulting real samples (imaginary part discarded)
      */
-    for (int i = 0; i < (length * CYCLES); i++) {
-        samples[i] = (int16_t) (creal(signal[i]) * 16384.0); // @ .5
+    for (int i = 0; i < (length * CYCLES); i++)
+    {
+        samples[i] = (int16_t)(creal(signal[i]) * 16384.0); // @ .5
     }
 
     return (length * CYCLES);
@@ -157,17 +161,20 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length) {
 /*
  * Gray coded QPSK modulation function
  */
-static complex double qpsk_mod(int bits[]) {
+static complex double qpsk_mod(int bits[])
+{
     return constellation[(bits[1] << 1) | bits[0]];
 }
 
-static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length) {
+static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length)
+{
     complex double symbol[length];
     int dibit[2];
 
-    for (int i = 0, s = 0; i < length; i++, s += 2) {
+    for (int i = 0, s = 0; i < length; i++, s += 2)
+    {
         dibit[0] = tx_bits[s + 1] & 0x1;
-        dibit[1] = tx_bits[s ] & 0x1;
+        dibit[1] = tx_bits[s] & 0x1;
 
         symbol[i] = qpsk_mod(dibit);
     }
@@ -177,7 +184,8 @@ static int qpsk_packet_mod(int16_t samples[], int tx_bits[], int length) {
 
 // Main Program
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     int bits[6400];
     int16_t frame[1];
     int length;
@@ -190,14 +198,12 @@ int main(int argc, char** argv) {
      * The loop bandwidth determins the lock range
      * and should be set around TAU/100 to TAU/200
      */
-    create_control_loop((TAU / 100.), -1., 1.);
-
-    double samplesPerSymbol = FS / RS;
-    create_QPSKDemodulator(samplesPerSymbol, 0.1);
+    create_control_loop((TAU / 200.), -1., 1.);
+    create_QPSKDemodulator((FS / RS), 0.1);
 
     /*
      * Create an RRC filter using the
-     * Sample Rate, baud, and Alpha
+     * Sample Rate, Baud, and Alpha
      */
     rrc_make(FS, RS, .35);
 
@@ -208,21 +214,23 @@ int main(int argc, char** argv) {
     fout = fopen(TX_FILENAME, "wb");
 
     fbb_tx_phase = cmplx(0.0);
-    //fbb_tx_rect = cmplx(TAU * CENTER / FS);
-    //fbb_offset_freq = CENTER;
+    // fbb_tx_rect = cmplx(TAU * CENTER / FS);
+    // fbb_offset_freq = CENTER;
 
-    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);	// 50 Hz error
+    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS); // 50 Hz error
     fbb_offset_freq = (CENTER + 50.0);
 
-    for (int k = 0; k < 2000; k++) {
+    for (int k = 0; k < 2000; k++)
+    {
         // 256 QPSK
-        for (int i = 0; i < FRAME_SIZE; i++) {
+        for (int i = 0; i < FRAME_SIZE; i++)
+        {
             bits[i] = rand() % 2;
         }
 
         length = qpsk_packet_mod(frame, bits, (FRAME_SIZE / 2));
 
-        fwrite(frame, sizeof (int16_t), length, fout);
+        fwrite(frame, sizeof(int16_t), length, fout);
     }
 
     fclose(fout);
@@ -235,18 +243,19 @@ int main(int argc, char** argv) {
     fbb_rx_phase = cmplx(0.0);
     fbb_rx_rect = cmplxconj(TAU * CENTER / FS);
 
-    while (1) {
+    while (1)
+    {
         /*
          * Read in the frame samples
          */
-        size_t count = fread(frame, sizeof (int16_t), 1, fin);
+        size_t count = fread(frame, sizeof(int16_t), 1, fin);
 
         if (count != 1)
             break;
 
         rx_frame(frame, bits);
     }
-    
+
     fclose(fin);
 
     return (EXIT_SUCCESS);

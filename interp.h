@@ -11,22 +11,23 @@ extern "C"
 #include <math.h>
 
 #ifndef M_PI
-#define M_PI            3.14159265358979323846
+#define M_PI 3.14159265358979323846
 #endif
 
-#define TAU             (2.0 * M_PI)
+#define TAU (2.0 * M_PI)
 
-#define ROTATE_FROM_PLUS_135  (-3.0 * (M_PI / 4.0))
-#define ROTATE_FROM_PLUS_45   (-1.0 * (M_PI / 4.0))
-#define ROTATE_FROM_MINUS_45  (1.0 * (M_PI / 4.0))
+#define ROTATE_FROM_PLUS_135 (-3.0 * (M_PI / 4.0))
+#define ROTATE_FROM_PLUS_45 (-1.0 * (M_PI / 4.0))
+#define ROTATE_FROM_MINUS_45 (1.0 * (M_PI / 4.0))
 #define ROTATE_FROM_MINUS_135 (3.0 * (M_PI / 4.0))
 
-typedef enum {
+typedef enum
+{
     D01 = 0b01,
     D00 = 0b00,
     D10 = 0b10,
     D11 = 0b11,
-    D99 = 99	// punt
+    D99 = 99 // punt
 } Dibit;
 
 void create_interpolatingSampleBuffer(double, double);
@@ -54,4 +55,3 @@ Dibit demod_receive(complex double);
 #ifdef __cplusplus
 }
 #endif
-

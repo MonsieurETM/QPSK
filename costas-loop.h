@@ -45,4 +45,3 @@ double get_min_freq(void);
 #ifdef __cplusplus
 }
 #endif
-

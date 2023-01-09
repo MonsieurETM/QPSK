@@ -36,7 +36,8 @@ static complex double mReceivedSample;
  * Implements a Differential QPSK demodulator using a Costas Loop and
  * a Gardner timing error detector.
  */
-void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
+void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain)
+{
     create_symbolEvaluator();
     create_interpolatingSampleBuffer(samplesPerSymbol, sampleCounterGain);
 
@@ -47,12 +48,16 @@ void create_QPSKDemodulator(double samplesPerSymbol, double sampleCounterGain) {
     mReceivedSample = 0.0;
 }
 
-static complex double cnormalize(complex double a) {
+static complex double cnormalize(complex double a)
+{
     double mag = cabs(a);
 
-    if (mag != 0.0) {
+    if (mag != 0.0)
+    {
         return a / mag;
-    } else {
+    }
+    else
+    {
         return a;
     }
 }
@@ -68,11 +73,13 @@ static complex double cnormalize(complex double a) {
  * gardner mid-point and we'll treat the interpolating buffer's mid-point
  * sample as the current symbol sample (ie flip-flopped)
  */
-static Dibit calculateSymbol() {
+static Dibit calculateSymbol()
+{
     complex double middleSample = getCurrentSample();
     complex double currentSample = getMiddleSample();
 
-    if ((middleSample == -10000.0) || (currentSample == -10000.0)) {
+    if ((middleSample == -10000.0) || (currentSample == -10000.0))
+    {
         return D99;
     }
 
@@ -109,7 +116,8 @@ static Dibit calculateSymbol() {
  * Processes a complex sample for decoding. Once sufficient samples are
  * buffered, a symbol decision is made.
  */
-Dibit demod_receive(complex double sample) {
+Dibit demod_receive(complex double sample)
+{
     // Update current sample and Mix with costas loop
     // to remove any rotation from frequency error
     mReceivedSample = sample * cmplxconj(get_phase());
@@ -118,14 +126,15 @@ Dibit demod_receive(complex double sample) {
     interp_receive(mReceivedSample);
 
     // Calculate the symbol once we've stored enough samples
-    if (hasSymbol()) {
+    if (hasSymbol())
+    {
         return calculateSymbol();
     }
 
     return D99;
 }
 
-complex double getReceivedSample() {
+complex double getReceivedSample()
+{
     return mReceivedSample;
 }
-

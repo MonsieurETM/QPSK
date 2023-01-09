@@ -31,7 +31,8 @@ static double d_beta;
  * The Costas loop locks to the center frequency of a signal and
  * downconverts signal to baseband.
  */
-void create_control_loop(double loop_bw, double min_freq, double max_freq) {
+void create_control_loop(double loop_bw, double min_freq, double max_freq)
+{
     set_phase(0.);
     set_frequency(0.);
 
@@ -44,24 +45,28 @@ void create_control_loop(double loop_bw, double min_freq, double max_freq) {
     set_loop_bandwidth(loop_bw);
 }
 
-double phase_detector(complex double sample) {
+double phase_detector(complex double sample)
+{
     return ((creal(sample) > 0. ? 1. : -1.) * cimag(sample) -
             (cimag(sample) > 0. ? 1. : -1.) * creal(sample));
 }
 
-void update_gains() {
+void update_gains()
+{
     double denom = ((1. + (2. * d_damping * d_loop_bw)) + (d_loop_bw * d_loop_bw));
 
     d_alpha = (4. * d_damping * d_loop_bw) / denom;
     d_beta = (4. * d_loop_bw * d_loop_bw) / denom;
 }
 
-void advance_loop(double error) {
+void advance_loop(double error)
+{
     d_freq = d_freq + d_beta * error;
     d_phase = d_phase + d_freq + d_alpha * error;
 }
 
-void phase_wrap() {
+void phase_wrap()
+{
     while (d_phase > TAU)
         d_phase -= TAU;
 
@@ -69,19 +74,20 @@ void phase_wrap() {
         d_phase += TAU;
 }
 
-void frequency_limit() {
+void frequency_limit()
+{
     if (d_freq > d_max_freq)
         d_freq = d_max_freq;
     else if (d_freq < d_min_freq)
         d_freq = d_min_freq;
 }
 
-
 // Setters
 
 void set_loop_bandwidth(double bw)
 {
-    if (bw < 0.) {
+    if (bw < 0.)
+    {
         d_loop_bw = 0.;
     }
 
@@ -91,7 +97,8 @@ void set_loop_bandwidth(double bw)
 
 void set_damping_factor(double df)
 {
-    if (df <= 0.) {
+    if (df <= 0.)
+    {
         d_damping = 0.;
     }
 
@@ -101,7 +108,8 @@ void set_damping_factor(double df)
 
 void set_alpha(double alpha)
 {
-    if (alpha < 0. || alpha > 1.) {
+    if (alpha < 0. || alpha > 1.)
+    {
         d_alpha = 0.;
     }
 
@@ -110,7 +118,8 @@ void set_alpha(double alpha)
 
 void set_beta(double beta)
 {
-    if (beta < 0. || beta > 1.) {
+    if (beta < 0. || beta > 1.)
+    {
         d_beta = 0.;
     }
 
@@ -155,4 +164,3 @@ double get_phase() { return d_phase; }
 double get_max_freq() { return d_max_freq; }
 
 double get_min_freq() { return d_min_freq; }
-
