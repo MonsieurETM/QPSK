@@ -49,20 +49,28 @@ double fbb_offset_freq;
 /*
  * QPSK Quadrant bit-pair values - Gray Coded
  *
- * 00 is east
- *
+ * 00 is east (Diamond)
+ */
 static const complex double constellation[] = {
     1.0 + 0.0 * I, //  East
     0.0 + 1.0 * I, //  North
     0.0 - 1.0 * I, //  South
    -1.0 + 0.0 * I  //  West
-};*/
-static const complex double constellation[] = {
-    0.0 + 1.0 * I, //  North
-   -1.0 + 0.0 * I, //  West
-    1.0 + 0.0 * I, //  East
-    0.0 - 1.0 * I  //  South
 };
+
+/*
+ * Experimental option
+ *
+ * 00 is north-west (Rectangular)
+ *
+static const complex double constellation[] = {
+   -1.0 + 1.0 * I, //  North-West
+   -1.0 - 1.0 * I, //  South-West
+    1.0 + 1.0 * I, //  North-East
+    1.0 - 1.0 * I  //  South-East
+};
+*/
+
 /*
  * Receive function
  * 
@@ -87,7 +95,7 @@ static void rx_frame(int16_t *in, int bits[]) {
     Dibit dbit = demod_receive(sample);
 
     if (dbit != D99) {
-        complex double val = getReceivedSample();
+        complex double val = getReceivedSample();	// Costas compensated
 #ifdef TEST_SCATTER
         fprintf(stderr, "%f %f\n", creal(val), cimag(val));
 #endif
@@ -101,16 +109,16 @@ static void rx_frame(int16_t *in, int bits[]) {
 }
 
 /*
- * Modulate the symbols by first upsampling to 9600 Hz sample rate,
- * and translating the spectrum to 1500 Hz, where it is filtered
- * using the root raised cosine coefficients.
+ * Modulate the symbols by first upsampling and translating
+ * the spectrum to selected center frequency, where it is then
+ * filtered using the root raised cosine coefficients.
  */
 static int tx_frame(int16_t samples[], complex double symbol[], int length) {
     complex double signal[(length * CYCLES)];
 
     /*
-     * Build the 2400 baud packet Frame zero padding
-     * for the desired 9600 Hz sample rate.
+     * Build the baseband packet Frame zero padding
+     * for the desired sample rate.
      */
     for (int i = 0; i < length; i++) {
         signal[(i * CYCLES)] = symbol[i];
@@ -140,8 +148,7 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length) {
      * (imaginary part discarded)
      */
     for (int i = 0; i < (length * CYCLES); i++) {
-        complex double val = signal[i] * 16384.0;
-        samples[i] = (int16_t) (creal(val) + cimag(val)); // @ .5
+        samples[i] = (int16_t) (creal(signal[i]) * 16384.0); // @ .5
     }
 
     return (length * CYCLES);
@@ -183,7 +190,7 @@ int main(int argc, char** argv) {
      * The loop bandwidth determins the lock range
      * and should be set around TAU/100 to TAU/200
      */
-    create_control_loop((TAU / 200.), -1., 1.);
+    create_control_loop((TAU / 100.), -1., 1.);
 
     double samplesPerSymbol = FS / RS;
     create_QPSKDemodulator(samplesPerSymbol, 0.1);
@@ -204,7 +211,7 @@ int main(int argc, char** argv) {
     //fbb_tx_rect = cmplx(TAU * CENTER / FS);
     //fbb_offset_freq = CENTER;
 
-    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);
+    fbb_tx_rect = cmplx(TAU * (CENTER + 50.0) / FS);	// 50 Hz error
     fbb_offset_freq = (CENTER + 50.0);
 
     for (int k = 0; k < 2000; k++) {

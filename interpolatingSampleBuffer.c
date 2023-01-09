@@ -47,7 +47,7 @@ static double mGain;
 
 static int mDelayLinePointer;
 static int mTwiceSamplesPerSymbol;
-static size_t mDelayLineSize;
+static int mDelayLineSize;
 
 static const double TAPS[129][8] = {
         //    -4            -3            -2            -1             0             1             2             3                mu
@@ -200,6 +200,7 @@ void create_interpolatingSampleBuffer(double samplesPerSymbol, double sampleCoun
     mMinimumSamplesPerSymbol = samplesPerSymbol * (1.0 - MAXIMUM_DEVIATION_SAMPLES_PER_SYMBOL);
 
     mTwiceSamplesPerSymbol = (int) floor(2.0 * samplesPerSymbol);
+
     mDelayLineSize = (2 * mTwiceSamplesPerSymbol);
     mDelayLineInphase = (double *) calloc(mDelayLineSize, sizeof (double));
     mDelayLineQuadrature = (double *) calloc(mDelayLineSize, sizeof (double));
@@ -239,9 +240,10 @@ static double interp_filter(double samples[], int offset, double mu) {
 // I don't know the length of the samples array??
 //
         // Ensure we have enough samples in the array
-        if ((mDelayLineSize - mDelayLinePointer) >= offset + 7) {		// I'm guessing in translation [SRS]
-            return -1000.0;
-        }
+        //if ((mDelayLineSize - mDelayLinePointer) >= offset + 7) {	// I'm guessing in translation [SRS]
+        //    printf("%d:%d  ", (mDelayLineSize - mDelayLinePointer), offset+7);
+        //    return -1000.0;
+        //}
         
         double accumulator;
 
@@ -384,11 +386,15 @@ complex double getPrecedingSample() {
 complex double getCurrentSample() {
     // Calculate interpolated current sample
     // -10000.0 means there wasn't enough samples yet
-    if ((getInphase(mSamplingPoint) == -10000.0) || (getQuadrature(mSamplingPoint) == -10000.0)) {
+
+    double re = getInphase(mSamplingPoint);
+    double im = getQuadrature(mSamplingPoint);
+
+    if ((re == -10000.0) || (im == -10000.0)) {
         return -10000.0;
     }
 
-    mCurrentSample = CMPLX(getInphase(mSamplingPoint), getQuadrature(mSamplingPoint));
+    mCurrentSample = CMPLX(re, im);
 
     return mCurrentSample;
 }
@@ -405,13 +411,16 @@ complex double getCurrentSample() {
 complex double getMiddleSample() {
     double halfDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol / 2.0;
 
+    double re = getInphase(halfDetectedSamplesPerSymbol);
+    double im = getQuadrature(halfDetectedSamplesPerSymbol);
+
     // Interpolated sample that is half a symbol away from (occurred before) the current sample.
     // -10000.0 means there wasn't enough samples yet
-    if ((getInphase(halfDetectedSamplesPerSymbol) == -10000.0) || (getQuadrature(halfDetectedSamplesPerSymbol) == -10000.0)) {
+    if ((re == -10000.0) || (im == -10000.0)) {
         return -10000.0;
     }
 
-    mMiddleSample = CMPLX(getInphase(halfDetectedSamplesPerSymbol), getQuadrature(halfDetectedSamplesPerSymbol));
+    mMiddleSample = CMPLX(re, im);
     
     return mMiddleSample;
 }

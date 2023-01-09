@@ -26,7 +26,6 @@ extern "C"
 #endif
 
 #define TAU             (2.0 * M_PI)
-#define ROTATE45        (M_PI / 4.0)
 
 /*
  * This method is much faster than using cexp()

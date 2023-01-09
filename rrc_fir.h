@@ -17,7 +17,7 @@ extern "C" {
 #define TAU           (2.0 * M_PI)
 
 #define NTAPS         127	// lower bauds need more taps, 127 for 300 baud is good
-#define GAIN          1.85
+#define GAIN          1.86
 
 void rrc_fir_array(complex double [], complex double [], int);
 void rrc_fir(complex double [], complex double *);
