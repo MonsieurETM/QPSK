@@ -67,14 +67,15 @@ static complex double cnormalize(complex double a)
  * and the current sample method points to the sample at the mid-point
  * between those 2 symbol periods and the middle sample method points to the
  * sample that is half a symbol period after the current sample.
- *
- * Since we need a middle sample and a current symbol sample for the gardner
- * calculation, we'll treat the interpolating buffer's current sample as the
- * gardner mid-point and we'll treat the interpolating buffer's mid-point
- * sample as the current symbol sample (ie flip-flopped)
  */
 static Dibit calculateSymbol()
 {
+    /*
+     * Since we need a middle sample and a current symbol sample for the gardner
+     * calculation, we'll treat the interpolating buffer's current sample as the
+     * gardner mid-point and we'll treat the interpolating buffer's mid-point
+     * sample as the current symbol sample (ie flip-flopped)
+     */
     complex double middleSample = getCurrentSample();
     complex double currentSample = getMiddleSample();
 
@@ -86,7 +87,7 @@ static Dibit calculateSymbol()
     // Differential decode middle and current symbols by calculating the angular rotation between the previous and
     // current samples (current sample x complex conjugate of previous sample).
     mMiddleSymbol = middleSample * conj(mPreviousMiddleSample);
-    mCurrentSymbol = currentSample * conj(mPreviousCurrentSample);
+    mCurrentSymbol = middleSample * conj(mPreviousCurrentSample);
 
     // Set gain to unity before we calculate the error value
     mMiddleSymbol = cnormalize(mMiddleSymbol);
@@ -120,7 +121,7 @@ Dibit demod_receive(complex double sample)
 {
     // Update current sample and Mix with costas loop
     // to remove any rotation from frequency error
-    mReceivedSample = sample * cmplxconj(get_phase());
+    mReceivedSample = sample * cmplx(get_phase());
 
     // Store the sample in the interpolating buffer
     interp_receive(mReceivedSample);

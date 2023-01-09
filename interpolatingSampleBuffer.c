@@ -239,18 +239,17 @@ static double interp_filter(double samples[], int offset, double mu)
 {
     // TODO
     // I don't know the length of the samples array??
-    //
+
     // Ensure we have enough samples in the array
-    if (mDelayLinePointer >= offset + 7) {	// I'm guessing in translation [SRS]
+    if (mDelayLineSize >= offset + 7) {	                      // I'm guessing in translation [SRS]
         return -1000.0;
     }
-
-    double accumulator;
 
     // Identify the filter bank that corresponds to mu
     int index = (int)(NSTEPS * mu);
 
-    accumulator  = (TAPS[index][7] * samples[offset    ]);
+    double accumulator = (TAPS[index][7] * samples[offset]);
+
     accumulator += (TAPS[index][6] * samples[offset + 1]);
     accumulator += (TAPS[index][5] * samples[offset + 2]);
     accumulator += (TAPS[index][4] * samples[offset + 3]);
@@ -397,7 +396,7 @@ complex double getPrecedingSample()
 /*
  * Interpolated current sample for the symbol.
  *
- * Note: this method should only be invoked after testing for
+ * Note: this function should only be invoked after testing for
  * a complete symbol with the hasSymbol() method.
  *
  * Called from QPSKDemodulator
@@ -424,7 +423,7 @@ complex double getCurrentSample()
  * Interpolated sample that is 1/2 symbol away from (after) the current
  * sample.
  *
- * Note: this method should only be invoked after testing for
+ * Note: this function should only be invoked after testing for
  * a complete symbol with the hasSymbol() method.
  *
  * Called from QPSKDemodulator

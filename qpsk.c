@@ -152,7 +152,12 @@ static int tx_frame(int16_t samples[], complex double symbol[], int length)
      */
     for (int i = 0; i < (length * CYCLES); i++)
     {
-        samples[i] = (int16_t)(creal(signal[i]) * 16384.0); // @ .5
+        complex double val = signal[i] * 16384.0;
+
+        // Summing has the effect of rotating the constellation 45 deg
+        // (rectangular rather than diamond)
+
+        samples[i] = (int16_t)(creal(val) + cimag(val)); // @ .5
     }
 
     return (length * CYCLES);
