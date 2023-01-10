@@ -1,7 +1,7 @@
-# Makefile for QPSK test modem
+# Makefile for QPSK modem
 
-SRC=qpsk.c rrc_fir.c interpolatingSampleBuffer.c costas-loop.c QPSKDemodulator.c symbolEvaluator.c
-HEADER=qpsk.h rrc_fir.h interp.h costas-loop.h
+SRC=qpsk.c costas_loop.c rrc_fir.c
+HEADER=qpsk.h costas_loop.h rrc_fir.h
 
 qpsk: ${SRC} ${HEADER}
 	gcc -std=c11 ${SRC} -DTEST_SCATTER -o qpsk -Wall -lm
@@ -9,5 +9,5 @@ qpsk: ${SRC} ${HEADER}
 # generate scatter diagram PNG
 test_scatter: qpsk
 	./qpsk 2>scatter.txt
-	DISPLAY="" octave-cli -qf --eval "load scatter.txt; plot(scatter(500:2000,1),scatter(500:2000,2),'.'); print('scatter.png','-dpng')"
+	DISPLAY="" octave-cli -qf --eval "load scatter.txt; plot(scatter(800:2000,1),scatter(800:2000,2),'.'); print('scatter.png','-dpng')"
   
