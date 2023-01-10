@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "rrc_fir.h"
+#include "qpsk.h"
 
 static float coeffs[NTAPS];
 
